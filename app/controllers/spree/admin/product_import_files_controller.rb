@@ -11,14 +11,20 @@ module Spree
       end
 
       def create
-        @product_import = Spree::ProductImportFile.new(filter_parames)
-        @product_import.file_name = filter_parames[:file].original_filename
-        @product_import.user_id = spree_current_user.id
-        @product_import.save
+        options = filter_parames
+        options[:user_id] = spree_current_user.id
 
-        # CreateProductsFromCsvJob.perform_later(@product_import)
+        creator = ProductImport::Creator.new(options)
+        creator.call
 
-        redirect_to admin_product_import_files_path
+        if(creator.success?)
+          flash.notice = Spree.t('success')
+          redirect_to admin_product_import_files_path
+        else
+          flash.now[:error] = Spree.t('error')
+          @product_import_file = creator.product_import_file
+          render :new
+        end
       end
 
       private
