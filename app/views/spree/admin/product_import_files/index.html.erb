@@ -14,8 +14,15 @@
       <div data-hook="admin_product_imports_index_search" class="row">
         <div class="col-12 col-lg-6">
           <div class="form-group">
-            <%= f.label :file_cont, Spree.t(:name) %>
-            <%= f.text_field :file_cont, size: 15, class: "form-control js-quick-search-target js-filterable" %>
+            <%= f.label :name_cont, Spree.t(:name) %>
+            <%= f.text_field :name_cont, size: 15, class: "form-control js-quick-search-target js-filterable" %>
+          </div>
+        </div>
+
+        <div class="col-12 col-lg-6">
+          <div class="form-group">
+            <%= f.label :file_name_cont, Spree.t(:file_name) %>
+            <%= f.text_field :file_name_cont, size: 15, class: "form-control js-quick-search-target js-filterable" %>
           </div>
         </div>
       </div>
@@ -38,7 +45,7 @@
         </th>
 
         <th scope="col">
-          <%= sort_link @search, :file, Spree.t(:file), { default_order: "asc" }, {title: 'admin_product_imports_listing_file_title'} %>
+          <%= sort_link @search, :file_name, Spree.t(:file_name), { default_order: "asc" }, {title: 'admin_product_imports_listing_file_name_title'} %>
         </th>
 
         <th scope="col">
@@ -46,7 +53,9 @@
         </th>
 
         <th scope="col" data-hook="admin_product_imports_index_header_actions" class="actions">
-          <%= Spree.t(:action) %>
+          <span class="d-flex justify-content-end">
+            <%= Spree.t(:action) %>
+          </span>
         </th>
       </tr>
     </thead>
@@ -57,13 +66,15 @@
             data-hook="admin_products_index_rows" class="<%= cycle('odd', 'even') %>">
 
             <td class="name"><%= product_import.name %></td>
-            <td class="file"><%= product_import.file %></td>
+            <td class="file"><%= product_import.file_name %></td>
             <td class="status"> <%= active_badge(true, label: product_import.status) %> </td>
 
             <td class="actions " data-hook="admin_products_index_row_actions">
               <span class="d-flex justify-content-end">
                 <%= link_to_delete product_import, no_text: true if can?(:delete, product_import) %>
+                <%= button_link_to "", Rails.application.routes.url_helpers.rails_blob_path(product_import.file, disposition: "attachment", only_path: true), icon: 'download' %>
               </span>
+             
             </td>
           </tr>
       <% end %>

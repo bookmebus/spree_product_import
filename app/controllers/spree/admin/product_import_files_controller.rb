@@ -12,6 +12,7 @@ module Spree
 
       def create
         @product_import = Spree::ProductImportFile.new(filter_parames)
+        @product_import.file_name = filter_parames[:file].original_filename
         @product_import.user_id = spree_current_user.id
         @product_import.save
 
