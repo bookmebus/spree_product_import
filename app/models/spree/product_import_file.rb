@@ -6,6 +6,8 @@ class Spree::ProductImportFile < ApplicationRecord
 
   validates :name, presence: true
   validates :file, presence: true
+  validates :file, attached: true, content_type: %i[csv]
+
   validate :correct_mine_type
 
   ALLOW_FORMATS = %w(text/csv).freeze
