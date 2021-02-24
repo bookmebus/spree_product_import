@@ -1,0 +1,29 @@
+<%= render partial: 'spree/admin/shared/error_messages', locals: { target: @product } %>
+
+<% content_for :page_title do %>
+  <%= link_to Spree.t(:product_imports), spree.admin_product_import_files_url %> /
+  <%= Spree.t(:new_product) %>
+<% end %>
+
+<%= form_for([:admin, @product_import_file], :method => :post, :html => { :multipart => true }) do |f| %>
+
+   <div data-hook="admin_product_import_form_name">
+      <%= f.field_container :name, class: ['form-group'] do %>
+         <%= f.label :name, Spree.t(:name) %>
+         <%= f.text_field :name, class: 'form-control title' %>
+         <%= f.error_message_on :name %>
+      <% end %>
+   </div>
+
+   <div data-hook="admin_product_import_form_file">
+      <%= f.field_container :file, class: ['form-group'] do %>
+         <%= f.label :file, Spree.t(:file)  %>
+         <%= f.file_field :file, accept: 'text/csv', class: ''  %>
+         <%= f.error_message_on :file %>
+      <% end %>
+   </div>
+
+   <div data-hook="admin_product_import_form_file">
+      <%= render partial: 'spree/admin/shared/new_resource_links' %>
+   </div>
+<% end %>

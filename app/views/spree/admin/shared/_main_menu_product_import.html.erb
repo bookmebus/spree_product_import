@@ -1,0 +1,5 @@
+<% if can? :admin, Spree::ProductImportFile %>
+  <ul class="nav nav-sidebar border-bottom">
+    <%= tab Spree::ProductImportFile, url: spree.admin_product_import_files_path, icon: 'upload', label: "Product List" %>
+  </ul>
+<% end %>
