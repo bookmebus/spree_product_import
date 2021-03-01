@@ -6,6 +6,8 @@ git_source(:github) do |repo_name|
 end
 
 gem 'spree', github: 'spree/spree', branch: 'master'
+gem 'spree_multi_vendor', github: 'spree-contrib/spree_multi_vendor'
+
 gem 'rails-controller-testing'
 
 gemspec
