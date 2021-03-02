@@ -7,6 +7,10 @@ RSpec.describe ProductImport::Importer, type: :services do
   let!(:shipping_category) { create(:shipping_category, name: 'Shipping by VTENH')}
   let!(:tax_category) { create(:tax_category, name: 'VAT Incl.')}
 
+  let!(:stock_location_1) { create(:stock_location, name: 'SLP1', backorderable_default: true, propagate_all_variants: true)}
+  let!(:stock_location_2) { create(:stock_location, name: 'SLP2', backorderable_default: true, propagate_all_variants: true)}
+  # stock_location.stock_items.where(variant_id: product_1.master_id).first.adjust_count_on_hand(10)
+
   let!(:taxon_men) { create(:taxon, name: 'Menware')}
   let!(:taxon_women) { create(:taxon, name: 'Womenware')}
 
@@ -41,7 +45,6 @@ RSpec.describe ProductImport::Importer, type: :services do
     it "read" do
       import_file = create(:product_import_file)
       importer = ProductImport::Importer.new(import_file)
-
       importer.call
 
       # Spree::Product.all.map{|p| display_product(p)}
@@ -49,20 +52,22 @@ RSpec.describe ProductImport::Importer, type: :services do
     end
 
     def display_product(product)
+      p product.master.stock_items
+      p product.master.prices
       p "*" * 80
-      p "product     ********************************"
-      p product
-      p product.variants.count
-      p product.master
-      p "variant     *******************************"
       variant =  product.variants.first
       p variant
+      p variant
+      p "option_values"
       p variant.option_values
+      
+      p "\noption_value_variants"
       p variant.option_value_variants
 
-      p "prices      ******************************"
-      p "stock_item  ******************************"
-      p "images      ******************************"
+      p "stock_items"
+      p variant.stock_items
+      p "prices"
+      p variant.prices
     end
   end
 end

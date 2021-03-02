@@ -14,8 +14,10 @@ module ProductImport
     def call
       @errors = {}
       # {sheet.last_row}, col: #{sheet.last_column}
-      @xlsx.default_sheet = MAIN_SHEET
-      @sheet  = @xlsx.sheet(MAIN_SHEET)
+      # @xlsx.default_sheet = MAIN_SHEET
+      @xlsx.default_sheet = 'Main'
+
+      @sheet  = @xlsx.sheet(0)
 
       if @sheet.last_row <= 1
         return @errors[:product] = I18n.t('product_import.importer.file.no_product_data')
@@ -38,7 +40,57 @@ module ProductImport
       if(!product.save)
         @errors[:row] ||= {}
         @errors[:row][row_index ] = product.errors.full_messages
+        return
       end
+
+      update_product_stock(product, row_index)
+      update_main_variant_images(product, row_index)
+    end
+
+    def update_main_variant_images(product, row_index)
+
+      image_columns.length.times.each do |i|
+        column_index = image_columns[i] + 1
+        image_path = @sheet.cell(row_index, column_index)
+        next if image_path.blank?
+
+        process_product_image(product, image_path)
+      end
+
+
+      # File.new(Spree::Core::Engine.root + 'spec/fixtures' + 'thinking-cat.jpg')
+
+      # image.attachment.attach(io: io), filename: 'thinking-cat.jpg')
+    end
+
+    def process_product_image(product, image_path)
+
+      if(image_path.start_with? ('http'))
+        io = open(image_path)
+      else
+        full_path = File.expand_path("../../../../#{image_path}", __FILE__)
+        io = open(full_path)
+      end
+
+      image = Spree::Image.new
+      image.viewable_type = 'Spree::Variant'
+      image.viewable_id = product.master.id
+
+      filename = image_path.split("/").last
+
+      image.attachment.attach(io: io, filename: filename)
+      image.save
+    end
+
+    def update_product_stock(product, row_index)
+      stock_amount = @sheet.cell(row_index, 8)
+      return if stock_amount.blank?
+
+      stock_loc = stock_location(row_index)
+      return if stock_loc.nil?
+
+      stock_item = stock_loc.stock_items.where(variant_id: product.master_id).first_or_create
+      stock_item.adjust_count_on_hand(stock_amount.to_i)
     end
 
     def taxons_for_product(row_index)
@@ -53,9 +105,26 @@ module ProductImport
       @taxons = Spree::Taxon.where(["name in (?)", taxon_names])
     end
 
+    def product_columns
+      # product_column_offset 8
+      [
+        :name,
+        :sku,
+        :description,
+        :detail, # this column name was used for rich edit with trix editor, however it was not extracted to a gem yet.
+        :price,
+        :cost_price,
+        :promotionable,
+        :available_on,
+        :discontinue_on,
+        :meta_keywords,
+        :meta_description,
+      ].freeze
+    end
+
     def product_attrs(row_index)
-      # Offest of the product is 7
-      product_column_offset = 7
+      # Offest of the product is 9
+      product_column_offset = 9
 
       result = { }
 
@@ -72,10 +141,6 @@ module ProductImport
       result[:tax_category] = tax_category(row_index)
       result[:taxons] = taxons_for_product(row_index)
       result[:vendor] = vendor(row_index)
-
-      p "-" * 80
-      p result
-
       result
     end
 
@@ -97,31 +162,13 @@ module ProductImport
       @image_columns = []
       (@sheet.last_column).times.each do |i|
         name = @sheet.cell(1, i+1)
-        image_pattern = "Main Image"
+        image_pattern = "Image"
         if(name == image_pattern )
           @image_columns << i
         end
       end
 
       @image_columns
-    end
-
-    def product_columns
-      # product_column_offset 7
-      [
-        :name,
-        :sku,
-        :description,
-        :detail, # this column name was used for rich edit with trix editor, however it was not extracted to a gem yet.
-        :price,
-        :cost_price,
-        :promotionable,
-        :available_on,
-        :discontinue_on,
-        :meta_keywords,
-        :meta_description,
-      ].freeze
-
     end
 
     def property_columns
@@ -140,6 +187,12 @@ module ProductImport
       end
 
       @properties
+    end
+    
+    def stock_location(row_index=2)
+      stock_location_name = @sheet.cell(row_index, 7)
+      return if stock_location_name.blank?
+      Spree::StockLocation.where(name: stock_location_name).first_or_create
     end
 
     def option_types(row_index=2)

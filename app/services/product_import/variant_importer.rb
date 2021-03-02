@@ -1,7 +1,5 @@
 module ProductImport
-  class VariantImporter
-    VARIANT_SHEET = "Variant"
-    
+  class VariantImporter    
     def initialize(xlsx)
       @xlsx = xlsx
       @errors = {}
@@ -9,9 +7,10 @@ module ProductImport
 
     def call
       @errors = {}
-      # {sheet.last_row}, col: #{sheet.last_column}
-      @xlsx.default_sheet = VARIANT_SHEET
-      @sheet = @xlsx.sheet(VARIANT_SHEET)
+      # {sheet.last_row}, col: #{sheet.last_colum
+
+      @xlsx.default_sheet = 'Variant'
+      @sheet = @xlsx.sheet(1)
 
       if @sheet.last_row <= 1
         return @errors[:variant] = I18n.t('product_import.importer.file.no_variant_data')
@@ -30,10 +29,8 @@ module ProductImport
 
     def import_row(row_index)
       master_sku = @sheet.cell(row_index, 1)
-
-      p "master_sku: #{master_sku}"
       master_variant = Spree::Variant.where(is_master: true).find_by(sku: master_sku)
-    
+
       if(master_variant.nil?)
         @errors[:variant] ||= {}
         @errors[:variant][row_index.to_s] = "sku: #{master_sku} no found" 
@@ -61,7 +58,7 @@ module ProductImport
         depth: depth,
         discontinue_on: discontinue_on,
         cost_price: cost&.amount,
-        cost_currency: cost&.trycurrency&.to_s,
+        cost_currency: cost&.currency&.to_s,
         product_id: product.id,
         tax_category_id: product.tax_category_id,
         vendor_id: product.vendor_id,
@@ -69,19 +66,90 @@ module ProductImport
         track_inventory: true,
       }
 
-      p "variant options: #{options}"
-
-      found_variant = nil
+      matched_variant = nil
       product.variants.includes(option_values: :option_type).each do |variant|
         if variant_matched?(row_index, variant)
-          found_variant = variant
+          matched_variant = variant
           break
         end
       end
 
-      p "found_variant: #{found_variant}"
+      result = matched_variant.update(options)
+      if !result
+        error_message = matched_variant.errors.full_messages.join("\n")
+        @errors[:variant][row_index.to_s] = "can not update variant: #{row_index} #{master_sku} with error: #{error_message}"
+        return
+      end
 
-      found_variant.update(options)
+      update_variant_stock(matched_variant, row_index)
+      update_variant_price(matched_variant, row_index)
+      update_variant_image(matched_variant, row_index)
+    end
+
+    def update_variant_image(variant, row_index)
+      image_columns.length.times.each do |i|
+        column_index = image_columns[i] + 1
+        image_path = @sheet.cell(row_index, column_index)
+        next if image_path.blank?
+        process_variant_image(variant, image_path)
+      end
+    end
+
+    def process_variant_image(variant, image_path)
+      if(image_path.start_with? ('http'))
+        io = open(image_path)
+      else
+        full_path = File.expand_path("../../../../#{image_path}", __FILE__)
+        io = open(full_path)
+      end
+
+      image = Spree::Image.new
+      image.viewable_type = 'Spree::Variant'
+      image.viewable_id = variant.id
+
+      filename = image_path.split("/").last
+
+      image.attachment.attach(io: io, filename: filename)
+      image.save
+
+      p "save variant file image: #{image.attachment.blob.filename}"
+    end
+
+    def update_variant_stock(variant, row_index)
+      stock_amount = @sheet.cell(row_index, 13)
+      return if stock_amount.blank?
+
+      stock_loc = stock_location(row_index)
+      return if stock_loc.nil?
+
+      stock_item = stock_loc.stock_items.where(variant_id: variant.id).first_or_create
+      stock_item.adjust_count_on_hand(stock_amount)
+    end
+
+    def update_variant_price(variant, row_index)
+      sale_price = @sheet.cell(row_index, 10)
+      compare_at_price = @sheet.cell(row_index, 11)
+
+      amount_money = Monetize.parse(sale_price)
+
+      price = variant.prices.last
+
+      price.amount = amount_money.amount
+      price.currency = amount_money.currency.to_s
+
+      if(compare_at_price.present?)
+        compare_at_money = Monetize.parse(compare_at_price)
+        price.compare_at_amount = compare_at_money.amount
+      end
+
+      price.save
+    end
+
+    def stock_location(row_index)
+
+      stock_location_name = @sheet.cell(row_index, 12)
+      return if stock_location_name.blank?
+      Spree::StockLocation.where( name: stock_location_name).first_or_create
     end
 
     def variant_matched?(row_index, variant)

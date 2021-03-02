@@ -1,9 +1,6 @@
 require 'roo'
 
 module ProductImport
-  MAIN_SHEET = "Main"
-  VARIANT_SHEET = "Variant"
-
   class Importer
 
     attr_accessor :errors
@@ -25,12 +22,12 @@ module ProductImport
 
     def process_file(file)
       @xlsx ||= Roo::Spreadsheet.open(file)
+      
       product_importer = ProductImport::ProductImporter.new(@xlsx)
       product_importer.call
 
       variant_importer = ProductImport::VariantImporter.new(@xlsx)
       variant_importer.call
-      
     end
 
 
