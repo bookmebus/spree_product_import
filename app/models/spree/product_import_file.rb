@@ -1,5 +1,7 @@
 module Spree
   class ProductImportFile < Spree::Base
+    serialize :error, Hash
+  
     ALLOW_FORMATS = %w(text/csv application/vnd.openxmlformats-officedocument.spreadsheetml.sheet).freeze
    
     belongs_to :user, class_name: "#{Spree.user_class}"
