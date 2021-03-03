@@ -1,12 +1,8 @@
 module ProductImport
-  class VariantImporter    
-    def initialize(handler)
-      @handler = handler
-      @errors = {}
-    end
+  class VariantImporter < BaseImporter
 
     def call
-      @errors = {}
+      super
 
       if @handler.rows_count <= 1
         return @errors[:variant] = I18n.t('product_import.importer.file.no_variant_data')
@@ -79,36 +75,7 @@ module ProductImport
 
       update_variant_stock(matched_variant, row_index)
       update_variant_price(matched_variant, row_index)
-      update_variant_image(matched_variant, row_index)
-    end
-
-    def update_variant_image(variant, row_index)
-      image_columns.length.times.each do |i|
-        column_index = image_columns[i] + 1
-        image_path = @handler.cell(row_index, column_index)
-        next if image_path.blank?
-        process_variant_image(variant, image_path)
-      end
-    end
-
-    def process_variant_image(variant, image_path)
-      if(image_path.start_with? ('http'))
-        io = open(image_path)
-      else
-        full_path = File.expand_path("../../../../#{image_path}", __FILE__)
-        io = open(full_path)
-      end
-
-      image = Spree::Image.new
-      image.viewable_type = 'Spree::Variant'
-      image.viewable_id = variant.id
-
-      filename = image_path.split("/").last
-
-      image.attachment.attach(io: io, filename: filename)
-      image.save
-
-      p "save variant file image: #{image.attachment.blob.filename}"
+      update_variant_images(matched_variant, row_index)
     end
 
     def update_variant_stock(variant, row_index)
@@ -190,21 +157,5 @@ module ProductImport
 
       @option_types
     end
-
-    def image_columns
-      return @image_pattern if !@image_pattern.nil?
-      @image_columns = []
-      (@handler.cols_count).times.each do |i|
-        name = @handler.cell(1, i+1)
-        image_pattern = "Image"
-        if(name == image_pattern )
-          @image_columns << i
-        end
-      end
-
-      @image_columns
-    end
-
-
   end
 end

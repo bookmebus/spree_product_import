@@ -1,7 +1,7 @@
 require 'spec_helper'
 require 'spree_multi_vendor/factories'
 
-RSpec.describe ProductImport::Importer, type: :services do
+RSpec.describe ProductImport::Processor, type: :services do
   let!(:vendor) { create(:vendor, name: "Zando Fashion") }
   let!(:prototype) { create(:prototype, name: 'Men Shirt') }
   let!(:shipping_category) { create(:shipping_category, name: 'Shipping by VTENH')}
@@ -44,8 +44,10 @@ RSpec.describe ProductImport::Importer, type: :services do
   describe "" do
     it "read" do
       import_file = create(:product_import_file)
-      importer = ProductImport::Importer.new(import_file)
-      importer.call
+      processor = ProductImport::Processor.new(import_file)
+      processor.call
+
+      p "processor.success: #{processor.success?}"
 
       # Spree::Product.all.map{|p| display_product(p)}
       display_product(Spree::Product.last)

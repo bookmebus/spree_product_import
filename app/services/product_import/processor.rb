@@ -1,5 +1,5 @@
 module ProductImport
-  class Importer
+  class Processor
 
     attr_accessor :errors
 
@@ -10,14 +10,32 @@ module ProductImport
     def call
       return if @product_import_file.in_progress?
 
+      @errors = {}
+
       @handler = ProductImport::XlsxHandler.new(@product_import_file)
       mark_import_in_progress
 
       product_importer = ProductImport::ProductImporter.new(@handler.product_data!)
       product_importer.call
 
+      if(!product_importer.success?)
+        @errors.merge!(product_importer.errors)
+      end
+
       variant_importer = ProductImport::VariantImporter.new(@handler.variant_data!)
       variant_importer.call
+
+      if(!variant_importer.success?)
+        @errors.merge!(variant_importer.errors)
+      end
+    end
+
+    def success?
+      @errors.blank?
+    end
+
+    def import_step(&block)
+
     end
 
 

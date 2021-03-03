@@ -1,16 +1,9 @@
 module ProductImport
-  class ProductImporter
-    def initialize(handler)
-      @handler = handler
-      @errors = {}
-    end
-
-    def success?
-      @errors.blank?
-    end
+  class ProductImporter < BaseImporter
 
     def call
-      @errors = {}
+      super
+
       if @handler.rows_count <= 1
         return @errors[:product] = I18n.t('product_import.importer.file.no_product_data')
       end
@@ -36,42 +29,7 @@ module ProductImport
       end
 
       update_product_stock(product, row_index)
-      update_main_variant_images(product, row_index)
-    end
-
-    def update_main_variant_images(product, row_index)
-
-      image_columns.length.times.each do |i|
-        column_index = image_columns[i] + 1
-        image_path = @handler.cell(row_index, column_index)
-        next if image_path.blank?
-
-        process_product_image(product, image_path)
-      end
-
-
-      # File.new(Spree::Core::Engine.root + 'spec/fixtures' + 'thinking-cat.jpg')
-
-      # image.attachment.attach(io: io), filename: 'thinking-cat.jpg')
-    end
-
-    def process_product_image(product, image_path)
-
-      if(image_path.start_with? ('http'))
-        io = open(image_path)
-      else
-        full_path = File.expand_path("../../../../#{image_path}", __FILE__)
-        io = open(full_path)
-      end
-
-      image = Spree::Image.new
-      image.viewable_type = 'Spree::Variant'
-      image.viewable_id = product.master.id
-
-      filename = image_path.split("/").last
-
-      image.attachment.attach(io: io, filename: filename)
-      image.save
+      update_variant_images(product.master, row_index)
     end
 
     def update_product_stock(product, row_index)
@@ -146,21 +104,6 @@ module ProductImport
         hash[opt_type.id.to_s] = opt_type.option_value_ids
       end
       hash
-    end
-
-    # column number: [index1]
-    def image_columns
-      return @image_pattern if !@image_pattern.nil?
-      @image_columns = []
-      (@handler.cols_count).times.each do |i|
-        name = @handler.cell(1, i+1)
-        image_pattern = "Image"
-        if(name == image_pattern )
-          @image_columns << i
-        end
-      end
-
-      @image_columns
     end
 
     def property_columns
