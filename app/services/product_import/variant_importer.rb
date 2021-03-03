@@ -1,22 +1,18 @@
 module ProductImport
   class VariantImporter    
-    def initialize(xlsx)
-      @xlsx = xlsx
+    def initialize(handler)
+      @handler = handler
       @errors = {}
     end
 
     def call
       @errors = {}
-      # {sheet.last_row}, col: #{sheet.last_colum
 
-      @xlsx.default_sheet = 'Variant'
-      @sheet = @xlsx.sheet(1)
-
-      if @sheet.last_row <= 1
+      if @handler.rows_count <= 1
         return @errors[:variant] = I18n.t('product_import.importer.file.no_variant_data')
       end
 
-      rows_count = @sheet.last_row
+      rows_count = @handler.rows_count
 
       body_rows_count = rows_count - 1
       body_offset = 2
@@ -28,7 +24,7 @@ module ProductImport
     end
 
     def import_row(row_index)
-      master_sku = @sheet.cell(row_index, 1)
+      master_sku = @handler.cell(row_index, 1)
       master_variant = Spree::Variant.where(is_master: true).find_by(sku: master_sku)
 
       if(master_variant.nil?)
@@ -37,14 +33,14 @@ module ProductImport
         return
       end
 
-      sku = @sheet.cell(row_index, 2)
-      position = @sheet.cell(row_index, 3)
-      weight = @sheet.cell(row_index, 4)
-      width = @sheet.cell(row_index, 5)
-      height = @sheet.cell(row_index, 6)
-      depth = @sheet.cell(row_index, 7)
-      discontinue_on = @sheet.cell(row_index, 8)
-      cost_value = @sheet.cell(row_index, 9)
+      sku = @handler.cell(row_index, 2)
+      position = @handler.cell(row_index, 3)
+      weight = @handler.cell(row_index, 4)
+      width = @handler.cell(row_index, 5)
+      height = @handler.cell(row_index, 6)
+      depth = @handler.cell(row_index, 7)
+      discontinue_on = @handler.cell(row_index, 8)
+      cost_value = @handler.cell(row_index, 9)
       cost = Monetize.parse(cost_value)
 
       product = master_variant.product
@@ -89,7 +85,7 @@ module ProductImport
     def update_variant_image(variant, row_index)
       image_columns.length.times.each do |i|
         column_index = image_columns[i] + 1
-        image_path = @sheet.cell(row_index, column_index)
+        image_path = @handler.cell(row_index, column_index)
         next if image_path.blank?
         process_variant_image(variant, image_path)
       end
@@ -116,7 +112,7 @@ module ProductImport
     end
 
     def update_variant_stock(variant, row_index)
-      stock_amount = @sheet.cell(row_index, 13)
+      stock_amount = @handler.cell(row_index, 13)
       return if stock_amount.blank?
 
       stock_loc = stock_location(row_index)
@@ -127,8 +123,8 @@ module ProductImport
     end
 
     def update_variant_price(variant, row_index)
-      sale_price = @sheet.cell(row_index, 10)
-      compare_at_price = @sheet.cell(row_index, 11)
+      sale_price = @handler.cell(row_index, 10)
+      compare_at_price = @handler.cell(row_index, 11)
 
       amount_money = Monetize.parse(sale_price)
 
@@ -147,7 +143,7 @@ module ProductImport
 
     def stock_location(row_index)
 
-      stock_location_name = @sheet.cell(row_index, 12)
+      stock_location_name = @handler.cell(row_index, 12)
       return if stock_location_name.blank?
       Spree::StockLocation.where( name: stock_location_name).first_or_create
     end
@@ -170,7 +166,7 @@ module ProductImport
 
       result = {}
       option_type_columns.each do |option_type_name, column_index|
-        result[option_type_name] = @sheet.cell(row_index, column_index)
+        result[option_type_name] = @handler.cell(row_index, column_index)
       end
 
       result
@@ -182,8 +178,8 @@ module ProductImport
 
       @option_types = {}
 
-      (@sheet.last_column).times.each do |i|
-        name = @sheet.cell(1, i+1)
+      (@handler.cols_count).times.each do |i|
+        name = @handler.cell(1, i+1)
 
         option_type_pattern = "OptionType "
         if(name.start_with?(option_type_pattern) )
@@ -198,8 +194,8 @@ module ProductImport
     def image_columns
       return @image_pattern if !@image_pattern.nil?
       @image_columns = []
-      (@sheet.last_column).times.each do |i|
-        name = @sheet.cell(1, i+1)
+      (@handler.cols_count).times.each do |i|
+        name = @handler.cell(1, i+1)
         image_pattern = "Image"
         if(name == image_pattern )
           @image_columns << i

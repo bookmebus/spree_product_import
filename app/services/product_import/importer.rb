@@ -1,5 +1,3 @@
-require 'roo'
-
 module ProductImport
   class Importer
 
@@ -12,21 +10,13 @@ module ProductImport
     def call
       return if @product_import_file.in_progress?
 
+      @handler = ProductImport::XlsxHandler.new(@product_import_file)
       mark_import_in_progress
 
-      # path = Rails.application.routes.url_helpers.rails_blob_path(@product_import_file.file, only_path: true)
-      @product_import_file.file.open do |file|
-        process_file(file)
-      end
-    end
-
-    def process_file(file)
-      @xlsx ||= Roo::Spreadsheet.open(file)
-      
-      product_importer = ProductImport::ProductImporter.new(@xlsx)
+      product_importer = ProductImport::ProductImporter.new(@handler.product_data!)
       product_importer.call
 
-      variant_importer = ProductImport::VariantImporter.new(@xlsx)
+      variant_importer = ProductImport::VariantImporter.new(@handler.variant_data!)
       variant_importer.call
     end
 
