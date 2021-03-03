@@ -9,34 +9,45 @@ module ProductImport
 
     def call
       return if @product_import_file.in_progress?
-
-      @errors = {}
-
-      @handler = ProductImport::XlsxHandler.new(@product_import_file)
       mark_import_in_progress
+      reset_errors
+      init_handler
+      import_products
+      import_variants
+    end
 
-      product_importer = ProductImport::ProductImporter.new(@handler.product_data!)
-      product_importer.call
+    def reset_errors
+      @errors = {}
+    end
 
-      if(!product_importer.success?)
-        @errors.merge!(product_importer.errors)
-      end
+    def init_handler
+      @handler = ProductImport::XlsxHandler.new(@product_import_file)
+    end
 
-      variant_importer = ProductImport::VariantImporter.new(@handler.variant_data!)
-      variant_importer.call
+    def import_products
+      @handler.product_data!
+      product_importer = ProductImport::ProductImporter.new(@handler)
+      import_step_for(product_importer)
+    end
 
-      if(!variant_importer.success?)
-        @errors.merge!(variant_importer.errors)
+    def import_variants
+      @handler.variant_data!
+      variant_importer = ProductImport::VariantImporter.new(@handler)
+      import_step_for(variant_importer)
+    end
+
+    def import_step_for(importer)
+      importer.call
+
+      if(!importer.success?)
+        @errors.merge!(importer.errors)
       end
     end
 
     def success?
       @errors.blank?
     end
-
-    def import_step(&block)
-
-    end
+    
 
 
     def mark_import_status(status)
