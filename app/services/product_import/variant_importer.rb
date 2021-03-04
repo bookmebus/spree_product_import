@@ -32,8 +32,8 @@ module ProductImport
       sku = @handler.cell(row_index, 2)
       position = @handler.cell(row_index, 3)
       weight = @handler.cell(row_index, 4)
-      width = @handler.cell(row_index, 5)
-      height = @handler.cell(row_index, 6)
+      height = @handler.cell(row_index, 5)
+      width = @handler.cell(row_index, 6)
       depth = @handler.cell(row_index, 7)
       discontinue_on = @handler.cell(row_index, 8)
       cost_value = @handler.cell(row_index, 9)
@@ -65,6 +65,8 @@ module ProductImport
           break
         end
       end
+
+      p "matched_variant: at row: #{row_index}" if matched_variant.present?
 
       result = matched_variant.update(options)
       if !result
@@ -118,10 +120,16 @@ module ProductImport
     def variant_matched?(row_index, variant)
       values  = option_type_values(row_index)
 
+      # v = variant.option_values.to_a.map do |option_value|
+      #   "#{option_value.option_type.name}-#{option_value.name}"
+      # end
+
+      # p v
+
       variant.option_values.each do |option_value|
-        option_type_name = option_value.option_type.name
-        option_value_name = option_value.name
-        matched = values[option_type_name] != option_value_name
+        option_type_name = option_value.option_type.name.downcase
+        option_value_name = option_value.name.downcase
+        matched = values[option_type_name] == option_value_name
         return false if !matched
       end
 
@@ -133,13 +141,13 @@ module ProductImport
 
       result = {}
       option_type_columns.each do |option_type_name, column_index|
-        result[option_type_name] = @handler.cell(row_index, column_index)
+        result[option_type_name] = @handler.cell(row_index, column_index).downcase
       end
 
       result
     end
 
-    # { size: col_x, colo: col_y }
+    # { size: col_x, color: col_y }
     def option_type_columns
       return @option_types if !@option_types.nil?
 
@@ -151,7 +159,7 @@ module ProductImport
         option_type_pattern = "OptionType "
         if(name.start_with?(option_type_pattern) )
           opton_type_name = name[option_type_pattern.length..-1]
-          @option_types[opton_type_name] = i
+          @option_types[opton_type_name.downcase] = i+1
         end
       end
 

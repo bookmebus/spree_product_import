@@ -21,7 +21,11 @@ module ProductImport
 
     def import_row(row_index)
       attrs = product_attrs(row_index)
+
       product = Spree::Product.new(attrs)
+      product.available_on = Time.zone.now.to_date if product.available_on.blank?
+      product.promotionable = false if product.promotionable.blank?
+
       if(!product.save)
         @errors[:row] ||= {}
         @errors[:row][row_index ] = product.errors.full_messages
@@ -63,10 +67,12 @@ module ProductImport
         :description,
         :detail, # this column name was used for rich edit with trix editor, however it was not extracted to a gem yet.
         :price,
+        :compare_at_price,
         :cost_price,
         :promotionable,
         :available_on,
         :discontinue_on,
+        :meta_title,
         :meta_keywords,
         :meta_description,
       ].freeze
@@ -143,14 +149,14 @@ module ProductImport
       shipping_cat_name = @handler.cell(row_index, 3)
       return nil if shipping_cat_name.blank?
 
-      @shipping_category ||= Spree::ShippingCategory.find_by name: shipping_cat_name
+      Spree::ShippingCategory.where(name: shipping_cat_name).first_or_create
     end
 
     def tax_category(row_index=2)
       tax_cat_name = @handler.cell(row_index, 4)
       return nil if tax_cat_name.blank?
 
-      @tax_category ||= Spree::TaxCategory.find_by name: tax_cat_name
+      Spree::TaxCategory.where(name: tax_cat_name).first_or_create
     end
 
     def prototype(row_index=2)
