@@ -41,10 +41,10 @@ module ProductImport
     def update_variant_image(variant, image_path)
 
       if(image_path.start_with? ('http'))
-        io = open(image_path)
+        io = URI.open(image_path)
       else
         full_path = File.expand_path("../../../../#{image_path}", __FILE__)
-        io = open(full_path)
+        io = URI.open(full_path)
       end
 
       image = Spree::Image.new
