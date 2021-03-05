@@ -68,8 +68,7 @@ module ProductImport
 
       result = matched_variant.update(options)
       if !result
-        error_message = matched_variant.errors.full_messages.join("\n")
-        @errors[:variant][row_index.to_s] = "can not update variant: #{row_index} #{master_sku} with error: #{error_message}"
+        error_for(matched_variant, :variant, row_index)
         return
       end
 
@@ -104,7 +103,7 @@ module ProductImport
         price.compare_at_amount = compare_at_money.amount
       end
 
-      price.save
+      error_for(price, :price, row_index) if(!price.save)
     end
 
     def stock_location(row_index)
@@ -116,12 +115,6 @@ module ProductImport
 
     def variant_matched?(row_index, variant)
       values  = option_type_values(row_index)
-
-      # v = variant.option_values.to_a.map do |option_value|
-      #   "#{option_value.option_type.name}-#{option_value.name}"
-      # end
-
-      # p v
 
       variant.option_values.each do |option_value|
         option_type_name = option_value.option_type.name.downcase
