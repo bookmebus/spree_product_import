@@ -1,7 +1,7 @@
 module ProductImport
   class Processor
 
-    attr_accessor :errors
+    attr_accessor :errors, :product_import_file
 
     def initialize(product_import_file)
       @product_import_file = product_import_file
@@ -14,6 +14,7 @@ module ProductImport
       init_handler
       import_products
       import_variants
+      mark_import_result
     end
 
     def reset_errors
@@ -47,8 +48,14 @@ module ProductImport
     def success?
       @errors.blank?
     end
-    
 
+    def mark_import_result
+      if(success?)
+        mark_import_status(:success)
+      else
+        mark_import_error(@errors)
+      end
+    end
 
     def mark_import_status(status)
       @product_import_file.status = status
@@ -56,7 +63,6 @@ module ProductImport
     end
 
     def mark_import_error(errors)
-
       @product_import_file.error = errors
       mark_import_status(:failed)
     end

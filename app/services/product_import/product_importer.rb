@@ -27,13 +27,12 @@ module ProductImport
       product.promotionable = false if product.promotionable.blank?
 
       if(!product.save)
-        @errors[:row] ||= {}
-        @errors[:row][row_index ] = product.errors.full_messages
+        error_for(product, :product, row_index)
         return
       end
 
       update_product_stock(product, row_index)
-      update_variant_images(product.master, row_index)
+      update_product_images(product, row_index)
     end
 
     def update_product_stock(product, row_index)

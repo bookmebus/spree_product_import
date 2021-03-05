@@ -4,7 +4,7 @@ class CreateSpreeProductImportFiles < ActiveRecord::Migration[6.1]
       t.string :name
       t.string :file_name
       t.integer :status, default: 0
-      t.string :error
+      t.text :error
       t.integer :user_id
       t.datetime :deleted_at
 
