@@ -16,8 +16,7 @@ module ProductImport
     end
 
     def image_columns
-      return @image_columns if !@image_columns.nil?
-
+      return @image_columns if @image_columns.present?
       @image_columns = []
 
       image_header_name = "Image"
@@ -26,20 +25,19 @@ module ProductImport
         name = @handler.cell(1, i+1)
         @image_columns << i if (name == image_header_name )
       end
-
       @image_columns
     end
 
     def update_variant_images(variant, row_index)
       image_columns.each do |column_index|
         image_path = @handler.cell(row_index, column_index + 1)
+
         next if image_path.blank?
-        update_variant_image(variant, image_path)
+        update_variant_image(variant, image_path, row_index)
       end
     end
 
-    def update_variant_image(variant, image_path)
-
+    def update_variant_image(variant, image_path, row_index)
       if(image_path.start_with? ('http'))
         io = URI.open(image_path)
       else
@@ -48,13 +46,15 @@ module ProductImport
       end
 
       image = Spree::Image.new
-      image.viewable_type = 'Spree::Variant'
-      image.viewable_id = variant
+      image.viewable = variant
 
       filename = image_path.split("/").last
 
       image.attachment.attach(io: io, filename: filename)
-      image.save
+
+      if(!image.save)
+        p image.errors.full_messages
+      end
     end
 
 

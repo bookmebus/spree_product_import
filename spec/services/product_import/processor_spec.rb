@@ -90,6 +90,7 @@ RSpec.describe ProductImport::Processor, type: :services do
 
     it "creates 2 master variants for product1 and product2 respectively " do
       product1 = @products[0]
+      # first product master variant details
       expect(product1.master.sku).to eq "ZFMST202121"
       expect(product1.master.cost_price).to eq 10.0
       expect(product1.master.cost_currency).to eq 'USD'
@@ -97,13 +98,40 @@ RSpec.describe ProductImport::Processor, type: :services do
       expect(product1.master.tax_category_id).to eq nil # master variant does not have tax_category
       expect(product1.master.vendor_id).to eq vendor.id
 
+      # first product master variant images
+      filenames =  product1.master.images.map { |image| image.attachment.blob.filename.to_s }
+      expect(filenames).to eq ["product-1.jpeg", "product-2.jpeg"]
+
+      # first product master variant prices
+      expect(product1.master.prices.first.amount).to eq 11.2
+      expect(product1.master.prices.first.compare_at_amount).to eq 15.0
+      expect(product1.master.prices.first.currency).to eq 'USD'
+
+      # first product master variant stock items
+      product1_stocks = product1.master.stock_items.map(&:count_on_hand)
+      expect(product1_stocks).to eq [0, 5]
+
       product2 = @products[1]
+      # second product master variant details
       expect(product2.master.sku).to eq "WTST202121"
       expect(product2.master.cost_price).to eq 12.0
       expect(product2.master.cost_currency).to eq 'USD'
       expect(product2.master.track_inventory).to eq true
       expect(product2.master.tax_category_id).to eq nil # master variant does not have tax_category
       expect(product2.master.vendor_id).to eq vendor.id
+
+      # second product master variant images
+      filenames =  product2.master.images.map { |image| image.attachment.blob.filename.to_s }
+      expect(filenames).to eq ["product-2.jpeg"]
+
+      # second product master variant prices
+      expect(product2.master.prices.first.amount).to eq 15.0
+      expect(product2.master.prices.first.compare_at_amount).to eq 18.0
+      expect(product2.master.prices.first.currency).to eq 'USD'
+
+      # second product master variant stock items
+      product2_stocks = product2.master.stock_items.map(&:count_on_hand)
+      expect(product2_stocks).to eq [0, 10]
     end
 
     it "creates 6 variants for product1 with options type ( color: 3 x size: 2) and 2 variants updated" do
@@ -116,23 +144,30 @@ RSpec.describe ProductImport::Processor, type: :services do
       expect(variant_red_large.option_values.to_a).to eq [option_value_red, option_value_large]
 
       red_large_stock = variant_red_large.stock_items.map(&:count_on_hand)
-      expect(red_large_stock).to eq [0, 5]
+      expect(red_large_stock).to eq [0, 30]
 
       price_red_large =  variant_red_large.prices.last
       expect(price_red_large.amount).to eq 11.2
       expect(price_red_large.compare_at_amount).to eq 15.0
       expect(price_red_large.currency).to eq 'USD'
 
+      red_large_filenames = variant_red_large.images.map{|image| image.attachment.blob.filename.to_s }
+      expect(red_large_filenames).to eq ["variant-1.jpeg", "variant-2.jpg"]
+
       variant_red_medium = p1_variants.select{|v| v.sku == "ZFMST202121RedMedium" }.first
       expect(variant_red_medium).to be_present
       expect(variant_red_medium.option_values.to_a).to eq [option_value_red, option_value_medium]
       
       red_medium_stock = variant_red_medium.stock_items.map(&:count_on_hand)
-      expect(red_medium_stock).to eq [0, 10]
+      expect(red_medium_stock).to eq [0, 50]
 
       price_red_medium = variant_red_medium.prices.last
       expect(price_red_medium.amount).to eq 15.0
       expect(price_red_medium.compare_at_amount).to eq 18.0
+
+      red_medium_filenames = variant_red_medium.images.map{|image| image.attachment.blob.filename.to_s }
+      expect(red_medium_filenames).to eq ["variant-2.jpg", "variant-1.jpeg"]
+
 
       expect(variant_red_large.weight).to eq 0.5 
       expect(variant_red_medium.weight).to eq 0.6 
