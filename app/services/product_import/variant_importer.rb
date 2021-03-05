@@ -66,8 +66,6 @@ module ProductImport
         end
       end
 
-      p "matched_variant: at row: #{row_index}" if matched_variant.present?
-
       result = matched_variant.update(options)
       if !result
         error_message = matched_variant.errors.full_messages.join("\n")
@@ -96,7 +94,6 @@ module ProductImport
       compare_at_price = @handler.cell(row_index, 11)
 
       amount_money = Monetize.parse(sale_price)
-
       price = variant.prices.last
 
       price.amount = amount_money.amount

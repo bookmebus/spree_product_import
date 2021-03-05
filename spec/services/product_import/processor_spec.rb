@@ -115,10 +115,24 @@ RSpec.describe ProductImport::Processor, type: :services do
       expect(variant_red_large).to be_present
       expect(variant_red_large.option_values.to_a).to eq [option_value_red, option_value_large]
 
+      red_large_stock = variant_red_large.stock_items.map(&:count_on_hand)
+      expect(red_large_stock).to eq [0, 5]
+
+      price_red_large =  variant_red_large.prices.last
+      expect(price_red_large.amount).to eq 11.2
+      expect(price_red_large.compare_at_amount).to eq 15.0
+      expect(price_red_large.currency).to eq 'USD'
 
       variant_red_medium = p1_variants.select{|v| v.sku == "ZFMST202121RedMedium" }.first
       expect(variant_red_medium).to be_present
       expect(variant_red_medium.option_values.to_a).to eq [option_value_red, option_value_medium]
+      
+      red_medium_stock = variant_red_medium.stock_items.map(&:count_on_hand)
+      expect(red_medium_stock).to eq [0, 10]
+
+      price_red_medium = variant_red_medium.prices.last
+      expect(price_red_medium.amount).to eq 15.0
+      expect(price_red_medium.compare_at_amount).to eq 18.0
 
       expect(variant_red_large.weight).to eq 0.5 
       expect(variant_red_medium.weight).to eq 0.6 
@@ -152,7 +166,18 @@ RSpec.describe ProductImport::Processor, type: :services do
     it "creates 3 variants for product2 with option type ( color: 3) and 1 variant updated" do
       product2 = @products[1]
       variants = product2.variants.to_a
+
       expect(variants.size).to eq 3
+
+      expect(variants[1].option_values).to eq [option_value_blue]
+
+      stock = variants[1].stock_items.map(&:count_on_hand)
+      expect(stock).to eq [0, 1]
+
+      price = variants[1].prices.first
+      expect(price.amount).to eq 13.1
+      expect(price.compare_at_amount).to eq 15.5
+      expect(price.currency).to eq 'USD'
 
       expect(variants[1].option_values).to eq [option_value_blue]
 
