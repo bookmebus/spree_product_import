@@ -11,7 +11,7 @@ module Spree
       end
 
       def create
-        options = filter_parames
+        options = filter_params
         options[:user_id] = spree_current_user.id
 
         creator = ProductImport::Creator.new(options)
@@ -27,8 +27,23 @@ module Spree
         end
       end
 
+      def show
+        @product_import_file = Spree::ProductImportFile.find(params[:id])
+      end
+
+      def delete
+        @product_import_file = Spree::ProductImportFile.find(params[:id])
+        if @product_import_file.enqueued?
+          @product_import_file.status = :cancelled
+          @product_import_file.save
+          flaush.notice = Spree.t("delete")
+        end
+
+        redirect_to :index
+      end
+
       private
-      def filter_parames
+      def filter_params
         params.require(:product_import_file).permit(:name, :file)
       end
 

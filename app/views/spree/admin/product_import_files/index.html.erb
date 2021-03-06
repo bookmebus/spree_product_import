@@ -36,7 +36,7 @@
 
 <% if @collection.any? %>
 <div class="table-responsive">
-  <table class="table" id="listing_products">
+  <table class="table" id="listing_product_imports">
     <thead>
       <tr data-hook="admin_product_imports_index_headers">
 
@@ -61,17 +61,21 @@
     </thead>
     <tbody>
       <% @collection.each do |product_import| %>
-          <tr <%== "style='color: red;'" if product_import.pending? %>
+          <tr <%== "style='color: red;'" if product_import.active? %>
             id="<%= spree_dom_id product_import %>" 
             data-hook="admin_products_index_rows" class="<%= cycle('odd', 'even') %>">
 
-            <td class="name"><%= product_import.name %></td>
+            <td class="name"><%= link_to product_import.name, spree.admin_product_import_file_url(product_import) %></td>
             <td class="file"><%= product_import.file_name %></td>
-            <td class="status"> <%= active_badge(true, label: product_import.status) %> </td>
+            <td class="status">
+              <span class='badge badge-<%=product_import.status %>'>
+                <%= Spree.t("product_import_file.status.#{product_import.status}") %>
+              </span>
+            </td>
 
             <td class="actions " data-hook="admin_products_index_row_actions">
               <span class="d-flex justify-content-end">
-                <%= link_to_delete product_import, no_text: true if can?(:delete, product_import) %>
+                <%= link_to_delete product_import, no_text: true if can?(:delete, product_import) && !product_import.processing? %>
                 <%= button_link_to "", Rails.application.routes.url_helpers.rails_blob_path(product_import.file, disposition: "attachment", only_path: true), icon: 'download' %>
               </span>
              

@@ -1,0 +1,38 @@
+<% content_for :page_title do %>
+  <%= link_to Spree.t(:product_imports), spree.admin_product_import_files_url %> /
+  <%= @product_import_file.name %>
+<% end %>
+
+<div class="table-responsive">
+  <h1><%= Spree.t('Details') %></h1>
+
+  <table class="table">
+    <tbody>
+      <tr>
+        <td><%= Spree.t('name') %></td>
+        <td><%= @product_import_file.name %></td>
+      </tr>
+
+      <tr>
+        <td><%= Spree.t('file_name') %></td>
+        <td><%= @product_import_file.file_name  %></td>
+      </tr>
+
+      <tr>
+        <td><%= Spree.t('status') %></td>
+        <td> 
+          <span class='badge badge-<%=@product_import_file.status %>'>
+            <%= Spree.t(@product_import_file.status) %>
+          </span>
+        </td>
+      </tr>
+
+      <tr>
+        <td><%= Spree.t('error') %></td>
+        <td><%= @product_import_file.error %> </td>
+      </tr>
+
+    </tbody>
+
+  </table>
+</div>

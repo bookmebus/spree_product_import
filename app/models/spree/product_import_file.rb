@@ -7,10 +7,12 @@ module Spree
     belongs_to :user, class_name: "#{Spree.user_class}"
     has_one_attached :file
 
-    enum status: %i[pending in_progress success failed]
+    enum status: %i[active processing success failed canceled]
 
     validates :name, presence: true
     validates :file, attached: true, content_type: ALLOW_FORMATS
+
+    self.default_ransackable_attributes = %w[id name file_name updated_at created_at]
 
     before_save :set_file_name
 

@@ -2,7 +2,16 @@
 # See https://github.com/svenfuchs/rails-i18n/tree/master/rails%2Flocale for starting points.
 
 en:
-  product_import:
-    importer:
-      file:
-        no_data: "File is has no data"
+  activerecord:
+    attributes:
+      spree/product_import_file:
+        file_name: Filename
+  spree:
+    file_name: "Filename"
+    product_import_file:
+      status:
+        active: "Active"
+        processing: "Processing"
+        failed: "failed"
+        success: "success"
+        cancelled: "cancelled"

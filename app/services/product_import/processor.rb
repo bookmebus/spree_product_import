@@ -8,13 +8,26 @@ module ProductImport
     end
 
     def call
-      return if @product_import_file.in_progress?
-      mark_import_in_progress
-      reset_errors
-      init_handler
-      import_products
-      import_variants
+      return if !@product_import_file.active?
+      
+      begin
+        process
+      rescue Exception => ex
+        @errors = { message: ex.message, backtrace: ex.backtrace }
+      end
+
       mark_import_result
+
+    end
+
+    def process
+      ActiveRecord::Base.transaction do
+        mark_import_processing
+        reset_errors
+        init_handler
+        import_products
+        import_variants
+      end
     end
 
     def reset_errors
@@ -67,10 +80,8 @@ module ProductImport
       mark_import_status(:failed)
     end
 
-
-    def mark_import_in_progress
-      # TODO: lock to avoid double process
-      mark_import_status( :in_progress )
+    def mark_import_processing
+      mark_import_status(:processing )
     end
   end
 end
