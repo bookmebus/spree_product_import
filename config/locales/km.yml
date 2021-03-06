@@ -1,0 +1,18 @@
+# Sample localization file for English. Add more files in this directory for other locales.
+# See https://github.com/svenfuchs/rails-i18n/tree/master/rails%2Flocale for starting points.
+
+km:
+  activerecord:
+    attributes:
+      spree/product_import_file:
+        file_name: "ឈ្មោះ​ឯកសារ"
+
+  spree:
+    file_name: "ឈ្មោះ​ឯកសារ"
+    product_import_file:
+      status:
+        acitve: "បានកំណត់ពេល"
+        processing: "កំពុង​ដំណើរការ"
+        failed: "បានបរាជ័យ"
+        success: "ជោគជ័យ"
+        cancelled: "លុបចោល"

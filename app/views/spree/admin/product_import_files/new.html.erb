@@ -2,7 +2,7 @@
 
 <% content_for :page_title do %>
   <%= link_to Spree.t(:product_imports), spree.admin_product_import_files_url %> /
-  <%= Spree.t(:new_product) %>
+  <%= Spree.t(:new_product_import) %>
 <% end %>
 
 <%= form_for([:admin, @product_import_file], :method => :post, :html => { :multipart => true }) do |f| %>
@@ -18,7 +18,7 @@
    <div data-hook="admin_product_import_form_file">
       <%= f.field_container :file, class: ['form-group'] do %>
          <%= f.label :file, Spree.t(:file)  %>
-         <%= f.file_field :file, accept: 'text/csv', class: ''  %>
+         <%= f.file_field :file, accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', class: ''  %>
          <%= f.error_message_on :file %>
       <% end %>
    </div>
