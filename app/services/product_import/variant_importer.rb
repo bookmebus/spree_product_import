@@ -66,6 +66,11 @@ module ProductImport
         end
       end
 
+      if matched_variant.nil?
+        error_message("variant not found", :variant, row_index)
+        return
+      end
+
       result = matched_variant.update(options)
       if !result
         error_for(matched_variant, :variant, row_index)
