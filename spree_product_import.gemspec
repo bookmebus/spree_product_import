@@ -22,10 +22,16 @@ Gem::Specification.new do |s|
   s.requirements << 'none'
 
   spree_version = '>= 3.2.0', '< 5.0'
+  
   s.add_dependency 'spree_core', spree_version
   s.add_dependency 'spree_api', spree_version
   s.add_dependency 'spree_backend', spree_version
   s.add_dependency 'spree_extension'
 
+  # xlsx reader.
+  s.add_dependency 'roo', '~> 2.8.0'
+
+  s.add_development_dependency 'shoulda-matchers'
+  s.add_development_dependency 'active_storage_validations'
   s.add_development_dependency 'spree_dev_tools'
 end

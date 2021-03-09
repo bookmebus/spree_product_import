@@ -14,8 +14,15 @@
       <div data-hook="admin_product_imports_index_search" class="row">
         <div class="col-12 col-lg-6">
           <div class="form-group">
-            <%= f.label :file_cont, Spree.t(:name) %>
-            <%= f.text_field :file_cont, size: 15, class: "form-control js-quick-search-target js-filterable" %>
+            <%= f.label :name_cont, Spree.t(:name) %>
+            <%= f.text_field :name_cont, size: 15, class: "form-control js-quick-search-target js-filterable" %>
+          </div>
+        </div>
+
+        <div class="col-12 col-lg-6">
+          <div class="form-group">
+            <%= f.label :file_name_cont, Spree.t(:file_name) %>
+            <%= f.text_field :file_name_cont, size: 15, class: "form-control js-quick-search-target js-filterable" %>
           </div>
         </div>
       </div>
@@ -29,7 +36,7 @@
 
 <% if @collection.any? %>
 <div class="table-responsive">
-  <table class="table" id="listing_products">
+  <table class="table" id="listing_product_imports">
     <thead>
       <tr data-hook="admin_product_imports_index_headers">
 
@@ -37,33 +44,56 @@
           <%= sort_link @search, :name, Spree.t(:name), { default_order: "asc" }, {title: 'admin_product_imports_listing_name_title'} %>
         </th>
 
+         <th scope="col">
+          <%= Spree.t(:user) %>
+        </th>
+
         <th scope="col">
-          <%= sort_link @search, :file, Spree.t(:file), { default_order: "asc" }, {title: 'admin_product_imports_listing_file_title'} %>
+          <%= sort_link @search, :file_name, Spree.t(:file_name), { default_order: "asc" }, {title: 'admin_product_imports_listing_file_name_title'} %>
         </th>
 
         <th scope="col">
           <%= Spree.t(:status) %>
         </th>
 
+         <th scope="col">
+          <%= Spree.t(:created_at) %>
+        </th>
+
+         <th scope="col">
+          <%= Spree.t(:updated_at) %>
+        </th>
+
         <th scope="col" data-hook="admin_product_imports_index_header_actions" class="actions">
-          <%= Spree.t(:action) %>
+          <span class="d-flex justify-content-end">
+            <%= Spree.t(:action) %>
+          </span>
         </th>
       </tr>
     </thead>
     <tbody>
       <% @collection.each do |product_import| %>
-          <tr <%== "style='color: red;'" if product_import.pending? %>
+          <tr <%== "style='color: red;'" if product_import.active? %>
             id="<%= spree_dom_id product_import %>" 
             data-hook="admin_products_index_rows" class="<%= cycle('odd', 'even') %>">
 
-            <td class="name"><%= product_import.name %></td>
-            <td class="file"><%= product_import.file %></td>
-            <td class="status"> <%= active_badge(true, label: product_import.status) %> </td>
+            <td class="name"><%= link_to product_import.name, spree.admin_product_import_file_url(product_import) %></td>
+            <td class="user_id"><%="#{product_import.user.id}-#{product_import.user.email}"%></td>
+            <td class="file"><%= product_import.file_name %></td>
+            <td class="status">
+              <span class='badge badge-<%=product_import.status %>'>
+                <%= Spree.t("product_import_file.status.#{product_import.status}") %>
+              </span>
+            </td>
+            <td class='created_at'><%= product_import.created_at%></td>
+            <td class='updated_at'><%= product_import.updated_at%></td>
 
             <td class="actions " data-hook="admin_products_index_row_actions">
               <span class="d-flex justify-content-end">
-                <%= link_to_delete product_import, no_text: true if can?(:delete, product_import) %>
+                <%= link_to_delete product_import, no_text: true if can?(:delete, product_import) && !product_import.processing? %>
+                <%= button_link_to "", Rails.application.routes.url_helpers.rails_blob_path(product_import.file, disposition: "attachment", only_path: true), icon: 'download' %>
               </span>
+             
             </td>
           </tr>
       <% end %>

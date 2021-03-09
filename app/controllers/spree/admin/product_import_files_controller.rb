@@ -11,17 +11,39 @@ module Spree
       end
 
       def create
-        @product_import = Spree::ProductImportFile.new(filter_parames)
-        @product_import.user_id = spree_current_user.id
-        @product_import.save
+        options = filter_params
+        options[:user_id] = spree_current_user.id
 
-        # CreateProductsFromCsvJob.perform_later(@product_import)
+        creator = ProductImport::Creator.new(options)
+        creator.call
 
-        redirect_to admin_product_import_files_path
+        if(creator.success?)
+          flash.notice = Spree.t('success')
+          redirect_to admin_product_import_files_path
+        else
+          flash.now[:error] = Spree.t('error')
+          @product_import_file = creator.product_import_file
+          render :new
+        end
+      end
+
+      def show
+        @product_import_file = Spree::ProductImportFile.find(params[:id])
+      end
+
+      def delete
+        @product_import_file = Spree::ProductImportFile.find(params[:id])
+        if @product_import_file.enqueued?
+          @product_import_file.status = :cancelled
+          @product_import_file.save
+          flaush.notice = Spree.t("delete")
+        end
+
+        redirect_to :index
       end
 
       private
-      def filter_parames
+      def filter_params
         params.require(:product_import_file).permit(:name, :file)
       end
 
