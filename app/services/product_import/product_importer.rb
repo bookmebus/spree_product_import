@@ -1,3 +1,7 @@
+# find_by overriden by spree_globalize to handle globalize translations table automatically
+# in contrast to where
+# use find_by as much as possible for code compability with and without spree_globalize gem.
+
 module ProductImport
   class ProductImporter < BaseImporter
 
@@ -37,8 +41,6 @@ module ProductImport
     end
 
     def update_product_properties(product, row_index)
-      p "product_properties"
-      property_columns
 
       property_columns.each do |column_index, property|
         cell_value = @handler.cell(row_index, column_index+1)
@@ -62,15 +64,26 @@ module ProductImport
     end
 
     def taxons_for_product(row_index)
-      taxons(row_index) || prototype(row_index).taxons
+      taxons(row_index) || prototype(row_index)&.taxons
     end
 
     def taxons(row_index)
-      taxon_name = @handler.cell(row_index, 6)
+      taxon_name = @handler.cell(row_index, 5)
       return nil if taxon_name.blank?
 
+      @taxons = nil
+
       taxon_names = taxon_name.split(",").map(&:strip)
-      @taxons = Spree::Taxon.where(["name in (?)", taxon_names])
+    
+      taxon_names.each do |taxon_name|
+        taxon = Spree::Taxon.find_by(name: taxon_name)
+        if taxon.present?
+          @taxons ||= []
+          @taxons << taxon
+        end
+      end
+     
+      @taxons
     end
 
     def product_columns
@@ -117,7 +130,10 @@ module ProductImport
     # create variants
     # product.option_values_hash = option_values_hash(row_index)
     def option_values_hash(row_index)
-      opt_types = option_types(row_index) || prototype(row_index).option_types
+      opt_types = option_types(row_index)
+      opt_types = prototype(row_index)&.option_types if opt_types.blank?
+
+      return nil if opt_types.nil?
 
       hash = {}
       opt_types.each do |opt_type|
@@ -141,9 +157,10 @@ module ProductImport
         if(name.start_with?(property_pattern) )
           property_name = name[property_pattern.length..-1]
 
-          property = Spree::Property.where(["LOWER(name) = ? ", property_name.downcase]).first_or_initialize
-          
-          if(property.new_record?)
+          property = Spree::Property.find_by(name: property_name)
+
+          if(property.nil?)
+            property = Spree::Property.new
             property.name = property_name.downcase
             property.presentation = property_name
             property.save
@@ -151,15 +168,21 @@ module ProductImport
           @properties[i] = property
         end
       end
-      p "properties"
-      p @properties
       @properties
     end
     
     def stock_location(row_index=2)
       stock_location_name = @handler.cell(row_index, 7)
-      return if stock_location_name.blank?
-      Spree::StockLocation.where(name: stock_location_name).first_or_create
+      return nil if stock_location_name.blank?
+      
+      stock_location = Spree::StockLocation.find_by(name: stock_location_name)
+
+      if(stock_location.nil?)
+        stock_location = Spree::StockLocation.create(name: stock_location_name)
+      end
+
+      stock_location
+
     end
 
     def option_types(row_index=2)
@@ -167,29 +190,55 @@ module ProductImport
       option_type_values = @handler.cell(row_index, 6)
       return nil if option_type_values.blank?
 
+      @option_types = []
       values = option_type_values.split(",").map(&:strip).map(&:downcase).reject(&:blank?)
-      @option_types = Spree::OptionType.where(["lower(name) in ( ? )", values ])
+
+      values.each do |value|
+        option_type = Spree::OptionType.find_by(name: value)
+        if(option_type.nil?)
+
+          option_type = Spree::OptionType.new
+          option_type.name = value
+          option_type.presentation = value
+          
+          @option_types << option_type if option_type.save
+        else
+          @option_types << option_type
+        end
+      end
+
+      @option_types
     end
 
     def shipping_category(row_index=2)
       shipping_cat_name = @handler.cell(row_index, 3)
       return nil if shipping_cat_name.blank?
 
-      Spree::ShippingCategory.where(name: shipping_cat_name).first_or_create
+      shipping = Spree::ShippingCategory.find_by(name: shipping_cat_name)
+      if(shipping.nil?)
+        shipping = Spree::ShippingCategory.create(name: shipping_cat_name)
+      end
+
+      shipping
     end
 
     def tax_category(row_index=2)
       tax_cat_name = @handler.cell(row_index, 4)
       return nil if tax_cat_name.blank?
 
-      Spree::TaxCategory.where(name: tax_cat_name).first_or_create
+      tax = Spree::TaxCategory.find_by(name: tax_cat_name)
+      if(tax.nil?)
+        tax = Spree::TaxCategory.create(name: tax_cat_name)
+      end
+      tax
     end
 
     def prototype(row_index=2)
       prototype_name = @handler.cell(row_index, 2)
       return nil if prototype_name.blank?
 
-      @prototype ||= Spree::Prototype.find_by name: prototype_name
+      @prototype = Spree::Prototype.find_by name: prototype_name
+      @prototype
     end
 
     def vendor(row_index=2)

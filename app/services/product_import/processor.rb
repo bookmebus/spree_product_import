@@ -14,7 +14,7 @@ module ProductImport
         process
       rescue Exception => ex
         @errors = { message: ex.message, backtrace: ex.backtrace }
-        p @errors
+        p @errors[:message]
         Rails.logger.debug { @errors }
       end
 
