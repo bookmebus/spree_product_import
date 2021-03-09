@@ -9,6 +9,7 @@ km:
 
   spree:
     file_name: "ឈ្មោះ​ឯកសារ"
+    product_import: "នាំចូលផលិតផល"
     product_import_file:
       status:
         acitve: "បានកំណត់ពេល"
