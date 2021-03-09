@@ -33,6 +33,21 @@ module ProductImport
 
       update_product_stock(product, row_index)
       update_product_images(product, row_index)
+      update_product_properties(product, row_index)
+    end
+
+    def update_product_properties(product, row_index)
+      p "product_properties"
+      property_columns
+
+      property_columns.each do |column_index, property|
+        cell_value = @handler.cell(row_index, column_index+1)
+        next if cell_value.blank?
+
+        product_property = product.product_properties.build(property: property, value: cell_value)
+        product_property.save
+      end
+
     end
 
     def update_product_stock(product, row_index)
@@ -111,6 +126,8 @@ module ProductImport
       hash
     end
 
+    # {"Type"=>21, "Material"=>22, "Brand"=>23}
+
     def property_columns
       return @properties if !@properties.nil?
 
@@ -120,12 +137,22 @@ module ProductImport
         name = @handler.cell(1, i+1)
 
         property_pattern = "Property "
+
         if(name.start_with?(property_pattern) )
           property_name = name[property_pattern.length..-1]
-          @properties[property_name] = i
+
+          property = Spree::Property.where(["LOWER(name) = ? ", property_name.downcase]).first_or_initialize
+          
+          if(property.new_record?)
+            property.name = property_name.downcase
+            property.presentation = property_name
+            property.save
+          end
+          @properties[i] = property
         end
       end
-
+      p "properties"
+      p @properties
       @properties
     end
     

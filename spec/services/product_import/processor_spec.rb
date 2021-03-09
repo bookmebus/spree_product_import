@@ -62,6 +62,11 @@ RSpec.describe ProductImport::Processor, type: :services do
         @products = Spree::Product.all.to_a
       end
 
+      it "get properties column" do
+        # @processor.call
+
+      end
+
       it "import data and make product_import_file to status to eq :success" do
         expect( @processor.success? ).to eq true
         expect(@processor.errors.present?).to eq false
@@ -104,6 +109,26 @@ RSpec.describe ProductImport::Processor, type: :services do
         expect(product2.tax_category_id).to eq tax_category.id
         expect(product2.shipping_category_id).to eq shipping_category_exp.id
         expect(product2.vendor_id).to eq vendor.id
+      end
+
+      it 'create 3 product properties for product1' do
+        product1 = @products[0]
+
+        names =  product1.properties.map(&:name)
+        expect(names).to eq ["Type", "Material", "condition"]
+
+        values = product1.product_properties.map(&:value)
+        expect(values).to eq ["T-shirt", "Cotton", "Fare"]
+      end
+
+      it 'create 2 product properties for product2' do
+        product2 = @products[1]
+
+        names =  product2.properties.map(&:name)
+        expect(names).to eq ["Material", "condition"]
+
+        values = product2.product_properties.map(&:value)
+        expect(values).to eq [ "Cotton", "Good"]
       end
 
       it "creates 2 master variants for product1 and product2 respectively " do
