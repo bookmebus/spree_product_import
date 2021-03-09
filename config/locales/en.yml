@@ -7,6 +7,7 @@ en:
       spree/product_import_file:
         file_name: Filename
   spree:
+    product_import: "Product Import"
     file_name: "Filename"
     product_import_file:
       status:
