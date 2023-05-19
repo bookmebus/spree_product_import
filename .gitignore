@@ -8,7 +8,6 @@
 .vscode
 coverage
 default
-Gemfile.lock
 tmp
 nbproject
 pkg
@@ -17,6 +16,5 @@ spec/dummy
 .rvmrc
 .sass-cache
 public/spree
-.ruby-version
 .ruby-gemset
 gemfiles/*.gemfile.lock

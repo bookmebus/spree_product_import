@@ -10,7 +10,7 @@ module SpreeProductImport
     end
 
     initializer 'spree_product_import.environment', before: :load_config_initializers do |_app|
-      SpreeProductImport::Config = SpreeProductImport::Configuration.new
+      Config = Configuration.new
     end
 
     def self.activate

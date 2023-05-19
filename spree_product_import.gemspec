@@ -21,8 +21,8 @@ Gem::Specification.new do |s|
   s.require_path = 'lib'
   s.requirements << 'none'
 
-  spree_version = '>= 3.2.0', '< 5.0'
-  
+  spree_version = '>= 4.5'
+  s.add_dependency 'spree', spree_version
   s.add_dependency 'spree_core', spree_version
   s.add_dependency 'spree_api', spree_version
   s.add_dependency 'spree_backend', spree_version
@@ -34,4 +34,6 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'shoulda-matchers'
   s.add_development_dependency 'active_storage_validations'
   s.add_development_dependency 'spree_dev_tools'
+  s.add_development_dependency 'byebug'
+  s.add_development_dependency 'pg'
 end

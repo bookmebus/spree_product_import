@@ -9,7 +9,7 @@ module ProductImport
 
     def call
       return if !@product_import_file.active?
-      
+
       begin
         process
       rescue Exception => ex

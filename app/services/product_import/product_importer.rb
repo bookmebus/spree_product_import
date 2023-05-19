@@ -29,6 +29,7 @@ module ProductImport
       product = Spree::Product.new(attrs)
       product.available_on = Time.zone.now.to_date if product.available_on.blank?
       product.promotionable = false if product.promotionable.blank?
+      product.stores << Spree::Store.current if product.stores.blank?
 
       if(!product.save)
         error_for(product, :product, row_index)
@@ -74,7 +75,7 @@ module ProductImport
       @taxons = nil
 
       taxon_names = taxon_name.split(",").map(&:strip)
-    
+
       taxon_names.each do |taxon_name|
         taxon = Spree::Taxon.find_by(name: taxon_name)
         if taxon.present?
@@ -82,7 +83,7 @@ module ProductImport
           @taxons << taxon
         end
       end
-     
+
       @taxons
     end
 
@@ -170,11 +171,11 @@ module ProductImport
       end
       @properties
     end
-    
+
     def stock_location(row_index=2)
       stock_location_name = @handler.cell(row_index, 7)
       return nil if stock_location_name.blank?
-      
+
       stock_location = Spree::StockLocation.find_by(name: stock_location_name)
 
       if(stock_location.nil?)
@@ -200,7 +201,7 @@ module ProductImport
           option_type = Spree::OptionType.new
           option_type.name = value
           option_type.presentation = value
-          
+
           @option_types << option_type if option_type.save
         else
           @option_types << option_type
