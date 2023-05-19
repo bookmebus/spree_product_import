@@ -77,13 +77,13 @@ RSpec.describe ProductImport::Processor, type: :services do
         expect(product1.description).to eq "Trendy Tshirt for your summer need."
         expect(product1.slug).to eq "summer-2021-tshirt"
         expect(product1.promotionable).to eq false
-        expect(product1.available_on.present?).to eq true 
+        expect(product1.available_on.present?).to eq true
         expect(product1.discontinue_on.iso8601).to eq '2022-02-12T00:00:00Z'
-    
+
         expect(product1.meta_title).to eq 'Title Nike, Zando, T-shirt'
         expect(product1.meta_description).to eq nil
         expect(product1.meta_keywords).to eq 'Nike, Zando, T-shirt'
-    
+
         expect(product1.tax_category_id).to eq tax_category.id
         expect(product1.shipping_category_id).to eq shipping_category.id
         expect(product1.vendor_id).to eq vendor.id
@@ -94,13 +94,13 @@ RSpec.describe ProductImport::Processor, type: :services do
         expect(product2.description).to eq "Trendy Womenware summer need."
         expect(product2.slug).to eq "winter-2021-tshirt"
         expect(product2.promotionable).to eq true
-        expect(product2.available_on.iso8601).to eq "2022-02-27T00:00:00Z" 
+        expect(product2.available_on.iso8601).to eq "2022-02-27T00:00:00Z"
         expect(product2.discontinue_on.iso8601).to eq '2023-03-10T00:00:00Z'
-    
+
         expect(product2.meta_title).to eq 'Winter 2021 Tshirt'
         expect(product2.meta_description).to eq 'Beautiful Winter 2021 Tshirt'
         expect(product2.meta_keywords).to eq 'Winter 2021 Tshirt'
-    
+
         expect(product2.tax_category_id).to eq tax_category.id
         expect(product2.shipping_category_id).to eq shipping_category_exp.id
         expect(product2.vendor_id).to eq vendor.id
@@ -147,7 +147,7 @@ RSpec.describe ProductImport::Processor, type: :services do
 
         # first product master variant stock items
         product1_stocks = product1.master.stock_items.map(&:count_on_hand)
-        expect(product1_stocks).to eq [0, 5]
+        expect(product1_stocks).to eq [5]
 
         product2 = @products[1]
         # second product master variant details
@@ -169,12 +169,13 @@ RSpec.describe ProductImport::Processor, type: :services do
 
         # second product master variant stock items
         product2_stocks = product2.master.stock_items.map(&:count_on_hand)
-        expect(product2_stocks).to eq [0, 10]
+        expect(product2_stocks).to eq [10]
       end
 
       it "creates 6 variants for product1 with options type ( color: 3 x size: 2) and 2 variants updated" do
         product1 = @products[0]
         p1_variants = product1.variants.to_a
+
         expect(p1_variants.size).to eq 6
 
         variant_red_large = p1_variants.select{|v| v.sku == "ZFMST202121RedLarge" }.first
@@ -182,7 +183,7 @@ RSpec.describe ProductImport::Processor, type: :services do
         expect(variant_red_large.option_values.to_a).to eq [option_value_red, option_value_large]
 
         red_large_stock = variant_red_large.stock_items.map(&:count_on_hand)
-        expect(red_large_stock).to eq [0, 30]
+        expect(red_large_stock).to eq [30]
 
         price_red_large =  variant_red_large.prices.last
         expect(price_red_large.amount).to eq 11.2
@@ -195,9 +196,9 @@ RSpec.describe ProductImport::Processor, type: :services do
         variant_red_medium = p1_variants.select{|v| v.sku == "ZFMST202121RedMedium" }.first
         expect(variant_red_medium).to be_present
         expect(variant_red_medium.option_values.to_a).to eq [option_value_red, option_value_medium]
-        
+
         red_medium_stock = variant_red_medium.stock_items.map(&:count_on_hand)
-        expect(red_medium_stock).to eq [0, 50]
+        expect(red_medium_stock).to eq [50]
 
         price_red_medium = variant_red_medium.prices.last
         expect(price_red_medium.amount).to eq 15.0
@@ -206,11 +207,11 @@ RSpec.describe ProductImport::Processor, type: :services do
         red_medium_filenames = variant_red_medium.images.map{|image| image.attachment.blob.filename.to_s }
         expect(red_medium_filenames).to eq ["variant-2.jpg", "variant-1.jpeg"]
 
-        expect(variant_red_large.weight).to eq 0.5 
-        expect(variant_red_medium.weight).to eq 0.6 
+        expect(variant_red_large.weight).to eq 0.5
+        expect(variant_red_medium.weight).to eq 0.6
 
-        expect(variant_red_large.height).to eq 0.4 
-        expect(variant_red_medium.height).to eq 0.5 
+        expect(variant_red_large.height).to eq 0.4
+        expect(variant_red_medium.height).to eq 0.5
 
 
         expect(variant_red_large.width).to eq 0.1
@@ -220,7 +221,7 @@ RSpec.describe ProductImport::Processor, type: :services do
         expect(variant_red_medium.depth).to eq 1.3
 
         expect(variant_red_large.cost_price).to eq 10.0
-        expect(variant_red_medium.cost_price).to eq 10.1 
+        expect(variant_red_medium.cost_price).to eq 10.1
 
         expect(variant_red_large.cost_currency).to eq 'USD'
         expect(variant_red_medium.cost_currency).to eq 'USD'
@@ -229,7 +230,7 @@ RSpec.describe ProductImport::Processor, type: :services do
         expect(variant_red_medium.discontinue_on.iso8601).to eq '2022-11-01T00:00:00Z'
 
         expect(variant_red_large.tax_category_id).to eq product1.tax_category_id
-        expect(variant_red_medium.tax_category_id).to eq product1.tax_category_id 
+        expect(variant_red_medium.tax_category_id).to eq product1.tax_category_id
 
         expect(variant_red_large.vendor_id).to eq product1.vendor_id
         expect(variant_red_medium.vendor_id).to eq product1.vendor_id
@@ -244,7 +245,7 @@ RSpec.describe ProductImport::Processor, type: :services do
         expect(variants[1].option_values).to eq [option_value_blue]
 
         stock = variants[1].stock_items.map(&:count_on_hand)
-        expect(stock).to eq [0, 1]
+        expect(stock).to eq [1]
 
         price = variants[1].prices.first
         expect(price.amount).to eq 13.1
@@ -253,16 +254,16 @@ RSpec.describe ProductImport::Processor, type: :services do
 
         expect(variants[1].option_values).to eq [option_value_blue]
 
-        expect(variants[0].sku).to be_blank 
-        expect(variants[1].sku).to eq 'ZFMST202121BlueS' 
-        expect(variants[2].sku).to be_blank 
+        expect(variants[0].sku).to be_blank
+        expect(variants[1].sku).to eq 'ZFMST202121BlueS'
+        expect(variants[2].sku).to be_blank
 
-        expect(variants[0].weight).to eq 0.0 
-        expect(variants[1].weight).to eq 0.7 
-        expect(variants[2].weight).to eq 0.0 
+        expect(variants[0].weight).to eq 0.0
+        expect(variants[1].weight).to eq 0.7
+        expect(variants[2].weight).to eq 0.0
 
-        expect(variants[0].height).to eq nil 
-        expect(variants[1].height).to eq 0.6 
+        expect(variants[0].height).to eq nil
+        expect(variants[1].height).to eq 0.6
         expect(variants[2].height).to eq nil
 
         expect(variants[0].width).to eq nil
@@ -274,7 +275,7 @@ RSpec.describe ProductImport::Processor, type: :services do
         expect(variants[2].depth).to eq nil
 
         expect(variants[0].cost_price).to eq nil
-        expect(variants[1].cost_price).to eq 10.2 
+        expect(variants[1].cost_price).to eq 10.2
         expect(variants[2].cost_price).to eq nil
 
         expect(variants[0].cost_currency).to eq 'USD'
@@ -287,7 +288,7 @@ RSpec.describe ProductImport::Processor, type: :services do
 
 
         expect(variants[0].tax_category_id).to eq nil
-        expect(variants[1].tax_category_id).to eq product2.tax_category_id 
+        expect(variants[1].tax_category_id).to eq product2.tax_category_id
         expect(variants[2].tax_category_id).to eq nil
 
         expect(variants[0].vendor_id).to eq product2.vendor_id

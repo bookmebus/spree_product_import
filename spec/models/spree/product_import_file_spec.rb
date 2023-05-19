@@ -16,20 +16,20 @@ RSpec.describe Spree::ProductImportFile, type: :model do
   end
 
   it "validates format of file" do
-    import = build(:product_import_file)
+    import = build(:product_import_file_ok)
     result = import.valid?
 
     expect(result).to eq true
   end
 
   it "sets file_name attributes" do
-    import = create(:product_import_file)
-    expect(import.file_name).to eq "product_import.xlsx"
+    import = create(:product_import_file_ok)
+    expect(import.file_name).to eq "product_import_ok.xlsx"
   end
 
-  it "sets default status to pending" do
-    import = create(:product_import_file)
-    expect(import.pending?).to eq true
+  it "sets default status to active" do
+    import = create(:product_import_file_ok)
+    expect(import.active?).to eq true
   end
 
 end
