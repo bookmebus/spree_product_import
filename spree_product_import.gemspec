@@ -34,4 +34,6 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'shoulda-matchers'
   s.add_development_dependency 'active_storage_validations'
   s.add_development_dependency 'spree_dev_tools'
+  s.add_development_dependency 'spree_multi_vendor'
+  s.add_development_dependency 'sqlite3', '~> 1.6.0'
 end
