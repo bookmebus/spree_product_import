@@ -30,6 +30,11 @@ module ProductImport
       product.available_on = Time.zone.now.to_date if product.available_on.blank?
       product.promotionable = false if product.promotionable.blank?
 
+      # Normalize invalid date range instead of rejecting an otherwise valid row.
+      if product.available_on.present? && product.discontinue_on.present? && product.discontinue_on < product.available_on
+        product.discontinue_on = nil
+      end
+
       if(!product.save)
         error_for(product, :product, row_index)
         return
