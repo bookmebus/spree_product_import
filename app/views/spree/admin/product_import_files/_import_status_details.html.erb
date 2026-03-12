@@ -1,0 +1,206 @@
+<div class="import-status-details mt-2">
+  <%# Import type badge %>
+  <% if product_import.manual_import? %>
+    <span class="badge badge-info" title="Manual bulk import">Manual</span>
+  <% elsif product_import.file_import? %>
+    <span class="badge badge-secondary" title="File import">File</span>
+  <% end %>
+
+  <%# Progress bar while processing %>
+  <% if product_import.processing? && product_import.total_rows > 0 %>
+    <div class="progress mt-2" style="height: 20px;">
+      <div class="progress-bar progress-bar-striped progress-bar-animated"
+           role="progressbar"
+           style="width: <%= product_import.progress_percentage %>%"
+           aria-valuenow="<%= product_import.progress_percentage %>"
+           aria-valuemin="0"
+           aria-valuemax="100">
+        <%= product_import.progress_percentage %>%
+      </div>
+    </div>
+    <small class="text-muted">
+      <%= product_import.processed_rows %> / <%= product_import.total_rows %> rows
+      (<%= product_import.success_count %> success, <%= product_import.failure_count %> failed)
+    </small>
+
+  <%# Completed (success or failed) %>
+  <% elsif product_import.success? || product_import.failed? %>
+    <% if product_import.total_rows > 0 %>
+      <%# Summary stats row %>
+      <div class="mt-2 mb-3">
+        <table class="table table-sm table-bordered" style="width: auto;">
+          <thead class="thead-light">
+            <tr>
+              <th>Total</th>
+              <th class="text-success">Success</th>
+              <th class="text-danger">Failed</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-center"><strong><%= product_import.total_rows %></strong></td>
+              <td class="text-center text-success"><strong><%= product_import.success_count %></strong></td>
+              <td class="text-center text-danger"><strong><%= product_import.failure_count %></strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    <% end %>
+
+    <%# Determine error data %>
+    <% error_data = product_import.error.is_a?(Hash) ? product_import.error : {} %>
+    <% error_data = error_data.deep_symbolize_keys rescue {} %>
+
+    <%# ---- Success products table ---- %>
+    <% successes = Array(error_data[:successes]) %>
+    <% if successes.any? %>
+      <div class="mt-3">
+        <button class="btn btn-sm btn-outline-success"
+                type="button"
+                data-toggle="collapse"
+                data-target="#success-details-<%= product_import.id %>"
+                aria-expanded="true">
+          &#10003; View <%= successes.size %> Successful <%= 'Product'.pluralize(successes.size) %>
+        </button>
+        <div class="collapse show mt-2" id="success-details-<%= product_import.id %>">
+          <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+            <table class="table table-sm table-striped table-bordered">
+              <thead class="thead-light">
+                <tr>
+                  <th>#</th>
+                  <th>Product Name</th>
+                  <th>SKU</th>
+                  <th>Price</th>
+                  <th>Master</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% successes.each_with_index do |row, i| %>
+                  <tr>
+                    <td class="text-primary"><%= i + 1 %></td>
+                    <td>
+                      <% if row[:slug].present? %>
+                        <%= link_to (row[:name].presence || content_tag(:em, '(no name)')).html_safe,
+                              spree.edit_admin_product_path(row[:slug]),
+                              class: 'text-primary font-weight-medium' %>
+                      <% else %>
+                        <span class="text-primary"><%= row[:name].presence || content_tag(:em, '(no name)') %></span>
+                      <% end %>
+                    </td>
+                    <td>
+                      <% if row[:slug].present? %>
+                        <%= link_to row[:sku].presence || '—',
+                              spree.edit_admin_product_path(row[:slug]),
+                              class: 'text-primary' %>
+                      <% else %>
+                        <code class="text-primary"><%= row[:sku].presence || '—' %></code>
+                      <% end %>
+                    </td>
+                    <td class="text-primary"><%= row[:price].present? ? number_to_currency(row[:price]) : '—' %></td>
+                    <td>
+                      <% if row[:is_master] %>
+                        <span class="badge badge-primary">Master</span>
+                      <% else %>
+                        <span class="badge badge-light">Variant</span>
+                      <% end %>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <%# ---- Failed products table ---- %>
+    <% failures = Array(error_data[:manual_rows]) %>
+    <% if failures.any? %>
+      <div class="mt-3">
+        <button class="btn btn-sm btn-outline-danger"
+                type="button"
+                data-toggle="collapse"
+                data-target="#error-details-<%= product_import.id %>"
+                aria-expanded="true">
+          &#10007; View <%= failures.size %> Failed <%= 'Product'.pluralize(failures.size) %>
+        </button>
+        <div class="collapse show mt-2" id="error-details-<%= product_import.id %>">
+          <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
+            <table class="table table-sm table-bordered">
+              <thead class="thead-light">
+                <tr>
+                  <th>#</th>
+                  <th>Product Name</th>
+                  <th>SKU</th>
+                  <th>Price</th>
+                  <th>Master</th>
+                  <th>Reason(s)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% failures.each_with_index do |row, i| %>
+                  <tr class="table-danger">
+                    <td><%= row[:index] || i + 1 %></td>
+                    <td><%= row[:name].presence || content_tag(:em, '(no name)') %></td>
+                    <td><code><%= row[:sku].presence || '—' %></code></td>
+                    <td><%= row[:price].present? ? number_to_currency(row[:price]) : '—' %></td>
+                    <td>
+                      <% if row[:is_master] %>
+                        <span class="badge badge-primary">Master</span>
+                      <% else %>
+                        <span class="badge badge-light">Variant</span>
+                      <% end %>
+                    </td>
+                    <td>
+                      <ul class="mb-0 pl-3" style="font-size: 13px;">
+                        <% Array(row[:errors]).each do |err| %>
+                          <li><%= err %></li>
+                        <% end %>
+                      </ul>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <%# ---- Warnings (success with partial issues) ---- %>
+    <% warnings = Array(error_data[:warnings]) %>
+    <% if product_import.success? && warnings.any? %>
+      <div class="mt-3">
+        <button class="btn btn-sm btn-outline-warning"
+                type="button"
+                data-toggle="collapse"
+                data-target="#warning-details-<%= product_import.id %>"
+                aria-expanded="false">
+          &#9888; View Warnings
+        </button>
+        <div class="collapse mt-2" id="warning-details-<%= product_import.id %>">
+          <div class="alert alert-warning" style="max-height: 250px; overflow-y: auto;">
+            <strong>Products were imported, but some items had issues:</strong>
+            <ul class="mt-1 mb-0">
+              <% warnings.each do |w| %>
+                <li>
+                  <% if w[:product_id].present? %>
+                    Product #<%= w[:product_id] %>:
+                  <% end %>
+                  <%= Array(w[:errors]).join('; ') %>
+                </li>
+              <% end %>
+            </ul>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <%# System/unexpected error (no manual_rows key) %>
+    <% if error_data.key?(:message) %>
+      <div class="mt-2 alert alert-danger">
+        <strong>System error:</strong> <%= error_data[:message] %>
+      </div>
+    <% end %>
+  <% end %>
+</div>

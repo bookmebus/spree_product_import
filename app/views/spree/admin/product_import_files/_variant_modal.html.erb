@@ -1,0 +1,102 @@
+<%# Variant Management Modal %>
+<div id="variant-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center; overflow-y: auto;">
+   <div style="background: white; border-radius: 4px; max-width: 900px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.3); margin: 20px;">
+      <div style="padding: 20px; border-bottom: 1px solid #ddd; position: sticky; top: 0; background: white; z-index: 999;">
+         <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><%= Spree.t(:manage_variants, default: 'Manage Product Variants') %></h5>
+            <button type="button" class="btn btn-link p-0" data-action="close-variant-modal" aria-label="Close">
+               <span style="font-size: 24px;">&times;</span>
+            </button>
+         </div>
+      </div>
+
+      <div style="padding: 20px;">
+         <!-- Option Types Selection -->
+         <div class="card mb-3">
+            <div class="card-header">
+               <h6 class="mb-0"><%= Spree.t(:product_option_types, default: 'Product Option Types') %></h6>
+               <small class="text-muted"><%= Spree.t(:select_option_types_help, default: 'Select which option types this product will have (e.g., Size, Color)') %></small>
+            </div>
+            <div class="card-body">
+               <!-- Search Filter -->
+               <div class="form-group mb-3">
+                  <div class="input-group">
+                     <div class="input-group-prepend">
+                        <span class="input-group-text">
+                           <%= render partial: 'svg_icon', locals: { icon: 'search', size: 16 } %>
+                        </span>
+                     </div>
+                     <input type="text" 
+                            class="form-control" 
+                            id="option-types-search" 
+                            placeholder="<%= Spree.t(:search_option_types, default: 'Search option types...') %>"
+                            autocomplete="off">
+                     <div class="input-group-append">
+                        <button class="btn btn-outline-secondary" type="button" id="clear-option-types-search" style="display: none;">
+                           &times;
+                        </button>
+                     </div>
+                  </div>
+                  <small class="text-muted" id="option-types-count"></small>
+               </div>
+               
+               <!-- Option Types List with Scroll -->
+               <div id="modal-option-types-container" style="max-height: 300px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px; padding: 10px;">
+                  <% (@option_types || []).each do |option_type| %>
+                     <div class="custom-control custom-checkbox mb-2 option-type-item" 
+                          data-option-type-name="<%= option_type.name.downcase %>"
+                          data-option-type-presentation="<%= option_type.presentation.downcase %>">
+                        <input type="checkbox" class="custom-control-input modal-option-type-checkbox" 
+                               id="modal_option_type_<%= option_type.id %>" 
+                               value="<%= option_type.id %>"
+                               data-option-type-id="<%= option_type.id %>"
+                               data-option-type-name="<%= option_type.name %>"
+                               data-option-type-presentation="<%= option_type.presentation %>">
+                        <label class="custom-control-label" for="modal_option_type_<%= option_type.id %>">
+                           <%= option_type.presentation %>
+                        </label>
+                     </div>
+                  <% end %>
+               </div>
+               
+               <!-- No results message -->
+               <div id="no-option-types-found" class="text-center text-muted py-3" style="display: none;">
+                  <%= Spree.t(:no_option_types_found, default: 'No option types found matching your search.') %>
+               </div>
+            </div>
+         </div>
+
+         <!-- Variants List -->
+         <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+               <div>
+                  <h6 class="mb-0"><%= Spree.t(:variants, default: 'Variants') %></h6>
+                  <small class="text-muted"><%= Spree.t(:add_variants_help, default: 'Add product variants with specific option values') %></small>
+               </div>
+               <button type="button" class="btn btn-sm btn-primary" data-action="add-modal-variant">
+                  <span class="icon icon-add mr-1"></span>
+                  <%= Spree.t(:add_variant, default: 'Add Variant') %>
+               </button>
+            </div>
+            <div class="card-body">
+               <div id="modal-variants-container">
+                  <p class="text-muted text-center" id="no-variants-message">
+                     <%= Spree.t(:no_variants_yet, default: 'No variants added yet. Click "Add Variant" to create one.') %>
+                  </p>
+               </div>
+            </div>
+         </div>
+      </div>
+
+      <div style="padding: 20px; border-top: 1px solid #ddd; position: sticky; bottom: 0; background: white; z-index: 1;">
+         <div class="d-flex justify-content-end" style="gap: 10px;">
+            <button type="button" class="btn btn-secondary" data-action="close-variant-modal">
+               <%= Spree.t(:cancel, default: 'Cancel') %>
+            </button>
+            <button type="button" class="btn btn-primary" data-action="save-variants">
+               <%= Spree.t(:save_variants, default: 'Save Variants') %>
+            </button>
+         </div>
+      </div>
+   </div>
+</div>

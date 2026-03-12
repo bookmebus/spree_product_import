@@ -1,0 +1,965 @@
+<%# Update Products Section – shown when mode == 'update' %>
+
+<%# ── Confirmation Modal ──────────────────────────────────────────────────── %>
+<div id="update-confirm-modal"
+     style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+  <div style="background:white; border-radius:4px; max-width:500px; width:90%; box-shadow:0 4px 16px rgba(0,0,0,0.3); margin:20px;">
+    <div style="padding:16px 20px; border-bottom:1px solid #dee2e6; background:#f8f9fa; border-radius:4px 4px 0 0;">
+      <h5 class="mb-0" style="font-size:1rem;">Confirm Update</h5>
+    </div>
+    <div style="padding:20px;">
+      <p class="mb-2">You are about to update <strong id="update-confirm-count">0</strong> selected product(s).</p>
+      <p class="text-muted mb-0 small">This action cannot be undone. Are you sure you want to continue?</p>
+    </div>
+    <div style="padding:12px 20px; border-top:1px solid #dee2e6; display:flex; justify-content:flex-end; gap:8px;">
+      <button type="button" id="update-confirm-cancel" class="btn btn-secondary">Cancel</button>
+      <button type="button" id="update-confirm-submit" class="btn btn-success">
+        <span class="icon icon-check mr-1"></span>
+        Confirm Update
+      </button>
+    </div>
+  </div>
+</div>
+<%# ── /Confirmation Modal ──────────────────────────────────────────────────── %>
+
+<%# ── Bulk-Set Modal ──────────────────────────────────────────────────── %>
+<div id="update-bulk-modal"
+     style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9998; align-items:center; justify-content:center;">
+  <div style="background:white; border-radius:4px; max-width:680px; width:90%; box-shadow:0 4px 16px rgba(0,0,0,0.3); margin:20px;">
+
+    <%# Header %>
+    <div style="padding:16px 20px; border-bottom:1px solid #dee2e6; display:flex; justify-content:space-between; align-items:center; background:#f8f9fa; border-radius:4px 4px 0 0;">
+      <h5 class="mb-0" id="update-bulk-modal-title" style="font-size:1rem;">Set Value</h5>
+      <button type="button" id="update-bulk-modal-close" class="btn btn-link p-0" aria-label="Close">
+        <span style="font-size:22px; line-height:1; color:#6c757d;">&times;</span>
+      </button>
+    </div>
+
+    <%# Body %>
+    <div id="update-bulk-modal-body" style="padding:20px; position:relative;">
+      <%# Scope hint %>
+      <div class="alert alert-info py-2 mb-3" id="update-bulk-scope-banner">
+        <small id="update-bulk-scope-label"></small>
+      </div>
+
+      <div id="update-bulk-field-available_on" class="update-bulk-field-section" style="display:none;">
+        <div class="form-group mb-0">
+          <label class="font-weight-semibold"><%= Spree.t(:available_on) %></label>
+          <div id="update-bulk-datepicker-anchor" style="position:relative;">
+            <div class="input-group" id="update-bulk-datepicker-wrapper">
+              <input type="text"
+                     id="update-bulk-available-on-value"
+                     class="form-control shadow-none"
+                     placeholder="<%= Spree.t(:select_a_date) %>"
+                     autocomplete="off">
+              <div class="input-group-append">
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="update-bulk-datepicker-clear" tabindex="-1">&times;</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="update-bulk-field-shipping_category" class="update-bulk-field-section" style="display:none;">
+        <div class="form-group mb-0">
+          <label class="font-weight-semibold"><%= Spree.t(:shipping_category) %></label>
+          <select id="update-bulk-shipping-category-value" class="w-100">
+            <option value="">— <%= Spree.t('match_choices.none') %> —</option>
+            <% (@shipping_categories || []).each do |sc| %>
+              <option value="<%= sc.id %>"><%= sc.name %></option>
+            <% end %>
+          </select>
+        </div>
+      </div>
+
+      <div id="update-bulk-field-vendor" class="update-bulk-field-section" style="display:none;">
+        <div class="form-group mb-0">
+          <label class="font-weight-semibold"><%= Spree.t(:vendor, default: 'Vendor') %></label>
+          <select id="update-bulk-vendor-value" class="w-100">
+            <option value="">— <%= Spree.t('match_choices.none') %> —</option>
+            <% if defined?(Spree::Vendor) %>
+              <% (@vendors || []).each do |v| %>
+                <option value="<%= v.id %>"><%= v.name %></option>
+              <% end %>
+            <% end %>
+          </select>
+        </div>
+      </div>
+
+      <div id="update-bulk-field-taxons" class="update-bulk-field-section" style="display:none;">
+        <div class="form-group mb-0">
+          <label class="font-weight-semibold"><%= Spree.t(:taxons) %></label>
+          <select id="update-bulk-taxons-value" class="w-100" multiple>
+            <% (@taxons || []).each do |taxon| %>
+              <option value="<%= taxon.id %>"><%= taxon.pretty_name %></option>
+            <% end %>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <%# Footer %>
+    <div style="padding:12px 20px; border-top:1px solid #dee2e6; display:flex; justify-content:flex-end; gap:8px;">
+      <button type="button" id="update-bulk-modal-cancel" class="btn btn-secondary"><%= Spree.t(:cancel, default: 'Cancel') %></button>
+      <button type="button" id="update-bulk-modal-apply" class="btn btn-primary">
+        <span class="icon icon-check mr-1"></span>
+        <%= Spree.t(:apply, default: 'Apply') %>
+      </button>
+    </div>
+
+  </div>
+</div>
+<%# ── /Bulk-Set Modal ──────────────────────────────────────────────────── %>
+
+<div id="update-products-section">
+
+  <%# ── Product Filter with Tabs ──────────────────────────────────────────────── %>
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5 class="mb-3">Find Products to Update</h5>
+      
+      <%# Tab Navigation %>
+      <ul class="nav nav-tabs card-header-tabs" role="tablist">
+        <li class="nav-item">
+          <a class="nav-link <%= @update_vendor_id.present? && !@update_search_active ? 'active' : '' %>" 
+             id="vendor-filter-tab" 
+             data-toggle="tab" 
+             href="#vendor-filter-panel" 
+             role="tab">
+            <%= render partial: 'svg_icon', locals: { icon: 'home', size: 14, css_class: 'mr-1' } %>
+            Filter by Vendor
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link <%= @update_search_active ? 'active' : (!@update_vendor_id.present? ? 'active' : '') %>" 
+             id="product-search-tab" 
+             data-toggle="tab" 
+             href="#product-search-panel" 
+             role="tab">
+            <%= render partial: 'svg_icon', locals: { icon: 'search', size: 14, css_class: 'mr-1' } %>
+            Search Products
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="card-body">
+      <div class="tab-content">
+        
+        <%# Tab 1: Filter by Vendor %>
+        <div class="tab-pane fade <%= @update_vendor_id.present? && !@update_search_active ? 'show active' : '' %>" 
+             id="vendor-filter-panel" 
+             role="tabpanel">
+          <%= form_tag spree.new_admin_product_import_file_path, method: :get, class: 'd-flex align-items-end flex-wrap', style: 'gap: 12px;' do %>
+            <input type="hidden" name="mode" value="update">
+
+            <% if defined?(Spree::Vendor) && @vendors.present? %>
+              <div class="form-group mb-0 flex-grow-1" style="max-width: 400px;">
+                <label class="font-weight-semibold mb-1" for="update-vendor-select">Select Vendor</label>
+                <select name="update_vendor_id" id="update-vendor-select" class="select2 form-control">
+                  <option value="">— Select a vendor —</option>
+                  <% @vendors.each do |vendor| %>
+                    <option value="<%= vendor.id %>" <%= 'selected' if vendor.id.to_s == @update_vendor_id.to_s %>>
+                      <%= vendor.name %>
+                    </option>
+                  <% end %>
+                </select>
+              </div>
+            <% else %>
+              <p class="text-muted mb-0">No vendors available in the system.</p>
+            <% end %>
+
+            <div class="form-group mb-0">
+              <label class="font-weight-semibold mb-1" for="vendor-filter-per-page">Per page</label>
+              <select name="update_per_page" id="vendor-filter-per-page" class="form-control" style="width: 80px;">
+                <% [10, 25, 50, 100].each do |n| %>
+                  <option value="<%= n %>" <%= 'selected' if (params[:update_per_page].presence&.to_i || 25) == n %>>
+                    <%= n %>
+                  </option>
+                <% end %>
+              </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary mb-0">
+              <%= render partial: 'svg_icon', locals: { icon: 'search', size: 14, css_class: 'mr-1' } %>
+              Load Products
+            </button>
+          <% end %>
+        </div>
+
+        <%# Tab 2: Search Products %>
+        <div class="tab-pane fade <%= @update_search_active ? 'show active' : (!@update_vendor_id.present? ? 'show active' : '') %>" 
+             id="product-search-panel" 
+             role="tabpanel">
+          <%= form_tag spree.new_admin_product_import_file_path, method: :get, class: 'd-flex align-items-end flex-wrap', style: 'gap: 12px;' do %>
+            <input type="hidden" name="mode" value="update">
+            <input type="hidden" name="q[deleted_at_null]" value="1">
+            <input type="hidden" name="q[not_discontinued]" value="1">
+
+            <div class="form-group mb-0 flex-grow-1">
+              <label class="font-weight-semibold mb-1" for="update-search-name">Product Name</label>
+              <input type="text" name="q[search_by_name]" id="update-search-name" class="form-control" 
+                     placeholder="Search by name..." value="<%= params.dig(:q, :search_by_name) %>">
+            </div>
+
+            <div class="form-group mb-0 flex-grow-1">
+              <label class="font-weight-semibold mb-1" for="update-search-sku">SKU</label>
+              <input type="text" name="q[variants_including_master_sku_cont]" id="update-search-sku" class="form-control" 
+                     placeholder="Search by SKU..." value="<%= params.dig(:q, :variants_including_master_sku_cont) %>">
+            </div>
+
+            <div class="form-group mb-0">
+              <label class="font-weight-semibold mb-1" for="search-filter-per-page">Per page</label>
+              <select name="update_per_page" id="search-filter-per-page" class="form-control" style="width: 80px;">
+                <% [10, 25, 50, 100].each do |n| %>
+                  <option value="<%= n %>" <%= 'selected' if (params[:update_per_page].presence&.to_i || 25) == n %>>
+                    <%= n %>
+                  </option>
+                <% end %>
+              </select>
+            </div>
+
+            <div class="d-flex align-items-end mb-0" style="gap: 8px;">
+              <button type="submit" class="btn btn-primary">
+                <%= render partial: 'svg_icon', locals: { icon: 'search', size: 14, css_class: 'mr-1' } %>
+                Search
+              </button>
+            </div>
+          <% end %>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  <%# ── / Product Filter with Tabs ─────────────────────────────────────────────── %>
+
+  <% if @update_vendor_id.present? || @update_search_active %>
+    <% if @update_products.blank? %>
+      <div class="alert alert-info">No products found for the selected criteria.</div>
+    <% else %>
+
+      <%# ── Action List Toolbar ──────────────────────────────────────── %>
+      <div class="mb-3" data-hook="admin_product_import_table_actions" style="position: sticky; top: 0; z-index: 100; background: white; padding: 12px 0; margin-bottom: 0 !important;">
+        <h5 class="m-0 mb-3">Action List</h5>
+        <div class="d-flex flex-wrap align-items-center" style="gap: 8px;">
+          <button type="button" class="btn btn-outline-secondary btn-sm"
+                  data-action="update-bulk-set" data-field="available_on">
+            <span class="icon icon-calendar mr-1"></span>
+            Set Available On
+          </button>
+          <button type="button" class="btn btn-outline-secondary btn-sm"
+                  data-action="update-bulk-set" data-field="shipping_category">
+            <%= render partial: 'svg_icon', locals: { icon: 'truck', size: 14, css_class: 'mr-1' } %>
+            Set Shipping Category
+          </button>
+          <% if defined?(Spree::Vendor) && @vendors.present? %>
+            <button type="button" class="btn btn-outline-secondary btn-sm"
+                    data-action="update-bulk-set" data-field="vendor">
+              <%= render partial: 'svg_icon', locals: { icon: 'home', size: 14, css_class: 'mr-1' } %>
+              Set Vendor
+            </button>
+          <% end %>
+          <button type="button" class="btn btn-outline-secondary btn-sm"
+                  data-action="update-bulk-set" data-field="taxons">
+            <%= render partial: 'svg_icon', locals: { icon: 'tag', size: 14, css_class: 'mr-1' } %>
+            Set Taxons
+          </button>
+        </div>
+      </div>
+      <%# ── / Action List Toolbar ────────────────────────────────────── %>
+
+      <%# Update form – PATCH to bulk_update -%>
+      <%= form_tag spree.bulk_update_admin_product_import_files_path, method: :patch, id: 'product-update-form' do %>
+        <input type="hidden" name="update_vendor_id" value="<%= @update_vendor_id %>">
+
+        <%# Toolbar – matches _table_header.html.erb layout -%>
+        <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap"
+             style="gap: 8px; background-color: white; padding: 8px 12px; border-radius: 4px; position: sticky; top: 88px; z-index: 99; margin-top: 12px;">
+          <div>
+            <div class="mb-1">
+              <span class="text-muted" id="update-total-count" style="font-size: 16px;">
+                <%= @update_products.total_count %> <%= 'product'.pluralize(@update_products.total_count) %>
+              </span>
+            </div>
+            <div class="d-flex align-items-center" style="gap: 8px;">
+              <button type="button" class="btn btn-primary btn-sm"
+                      id="update-toggle-all-btn"
+                      data-state="expanded"
+                      data-label-expand="<%= Spree.t(:expand_all) %>"
+                      data-label-collapse="<%= Spree.t(:collapse_all) %>"
+                      aria-label="<%= Spree.t(:collapse_all) %>">
+                <span id="update-toggle-all-label"><%= Spree.t(:collapse_all) %></span>
+              </button>
+            </div>
+          </div>
+          <div class="d-flex align-items-center" style="gap: 8px;">
+            <span><%= Spree.t(:select_all) %></span>
+            <input type="checkbox"
+                   id="update-select-all-checkbox"
+                   style="transform: scale(1.2);">
+          </div>
+        </div>
+
+        <%# Product rows -%>
+        <%# Cache currency once to avoid repeated Spree::Config DB lookups and bypass sale-price decorator chains -%>
+        <% currency = @default_price_currency %>
+        <% @update_products.each do |product| %>
+          <% p_id = product.id %>
+          <% row_idx = "u_#{p_id}" %>
+          <% non_master_variants = product.variants %>
+
+          <div class="card mb-3 update-product-card"
+               data-product-id="<%= p_id %>"
+               data-master-variant-id="<%= product.master.id %>"
+               data-update-product-id="<%= p_id %>">
+
+            <%# Card header -%>
+            <div class="card-header d-flex align-items-center justify-content-between py-2"
+                 style="cursor: pointer;"
+                 data-action="toggle-update-row"
+                 data-target="update-row-body-<%= p_id %>">
+              <div class="d-flex align-items-center" style="gap: 10px;">
+                <span data-role="update-row-chevron-<%= p_id %>"
+                      style="display: inline-block; transform: rotate(90deg); transition: transform 0.2s;">
+                  <%= render partial: 'svg_icon', locals: { icon: 'chevron-right', size: 12 } %>
+                </span>
+                <strong><%= product.name %></strong>
+                <span class="text-muted small">SKU: <%= product.sku.presence || '—' %></span>
+              </div>
+              <div class="d-flex align-items-center" style="gap: 8px;" onclick="event.stopPropagation();">
+                <label class="mb-0 small text-muted mr-1">Include</label>
+                <input type="checkbox"
+                       name="product_updates[<%= p_id %>][_selected]"
+                       value="1"
+                       class="update-row-checkbox"
+                       style="transform: scale(1.2);">
+              </div>
+            </div>
+
+            <%# Card body – data-row-index wires modal system -%>
+            <div class="card-body pt-2 pb-3"
+                 id="update-row-body-<%= p_id %>"
+                 data-row-index="<%= row_idx %>">
+
+              <%# Basic fields -%>
+              <div class="row">
+                <div class="col-12 col-md-4">
+                  <div class="form-group">
+                    <label class="font-weight-semibold">Name <span class="text-danger">*</span></label>
+                    <input type="text"
+                           name="product_updates[<%= p_id %>][name]"
+                           value="<%= product.name %>"
+                           class="form-control form-control-sm">
+                  </div>
+                </div>
+                <div class="col-12 col-md-4">
+                  <div class="form-group">
+                    <label class="font-weight-semibold"><%= Spree.t(:sku) %></label>
+                    <input type="text"
+                           name="product_updates[<%= p_id %>][sku]"
+                           value="<%= product.sku %>"
+                           class="form-control form-control-sm">
+                  </div>
+                </div>
+                <div class="col-12 col-md-4">
+                  <div class="form-group">
+                    <label class="font-weight-semibold">Master Price</label>
+                    <input type="number" step="0.01" min="0"
+                           name="product_updates[<%= p_id %>][master_price]"
+                           value="<%= product.master.prices.detect { |p| p.currency == currency }&.amount %>"
+                           class="form-control form-control-sm">
+                  </div>
+                </div>
+                <div class="col-12 col-md-4">
+                  <div class="form-group">
+                    <label class="font-weight-semibold"><%= Spree.t(:available_on) %></label>
+                    <div class="input-group datepicker update-available-on-datepicker"
+                         data-wrap="true">
+                      <input type="text"
+                             name="product_updates[<%= p_id %>][available_on]"
+                             value="<%= product.available_on&.strftime('%Y-%m-%d %H:%M:%S') %>"
+                             placeholder="<%= Spree.t(:select_a_date) %>"
+                             class="form-control form-control-sm shadow-none"
+                             data-role="update-available-on-input"
+                             data-input="">
+                      <%= render partial: 'spree/admin/shared/cal_close' %>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-12 col-md-4">
+                  <div class="form-group">
+                    <label class="font-weight-semibold">Shipping Category</label>
+                    <select name="product_updates[<%= p_id %>][shipping_category_id]"
+                            class="select2 form-control form-control-sm"
+                            style="width: 100%;"
+                            data-placeholder="<%= Spree.t('match_choices.none') %>"
+                            data-role="update-shipping-category-input">
+                      <option value=""><%= Spree.t('match_choices.none') %></option>
+                      <% (@shipping_categories || []).each do |sc| %>
+                        <option value="<%= sc.id %>"
+                                <%= 'selected' if sc.id == product.shipping_category_id %>><%= sc.name %></option>
+                      <% end %>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <%# Hidden inputs – targets for the Description/SEO modal (not shown inline) -%>
+              <input type="hidden" name="product_updates[<%= p_id %>][meta_title]"       value="<%= ERB::Util.html_escape(product.meta_title) %>"       data-role="row-meta-title-input">
+              <input type="hidden" name="product_updates[<%= p_id %>][meta_keywords]"    value="<%= ERB::Util.html_escape(product.meta_keywords) %>"    data-role="row-meta-keywords-input">
+              <input type="hidden" name="product_updates[<%= p_id %>][meta_description]" value="<%= ERB::Util.html_escape(product.meta_description) %>" data-role="row-meta-description-input">
+
+              <%# Vendor + Taxons -%>
+              <div class="row">
+                <% if defined?(Spree::Vendor) && @vendors.present? %>
+                  <div class="col-12 col-md-4">
+                    <div class="form-group">
+                      <label class="font-weight-semibold"><%= Spree.t(:vendor, default: 'Vendor') %></label>
+                      <select name="product_updates[<%= p_id %>][vendor_id]"
+                              class="select2 form-control form-control-sm"
+                              style="width: 100%;"
+                              data-placeholder="<%= Spree.t('match_choices.none') %>"
+                              data-role="row-vendor-select">
+                        <option value=""><%= Spree.t('match_choices.none') %></option>
+                        <% (@vendors || []).each do |vendor| %>
+                          <option value="<%= vendor.id %>"
+                                  <%= 'selected' if product.respond_to?(:vendor_id) && product.vendor_id == vendor.id %>>
+                            <%= vendor.name %>
+                          </option>
+                        <% end %>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="col-12 col-md-8">
+                <% else %>
+                  <div class="col-12">
+                <% end %>
+                    <div class="form-group">
+                      <label class="font-weight-semibold"><%= Spree.t(:taxons) %></label>
+                      <select name="product_updates[<%= p_id %>][taxon_ids][]"
+                              multiple
+                              class="select2 form-control form-control-sm"
+                              style="width: 100%;"
+                              data-placeholder="Select taxons…"
+                              data-role="update-taxons-input">
+                        <% (@taxons || []).each do |taxon| %>
+                          <option value="<%= taxon.id %>"
+                                  <%= 'selected' if product.taxon_ids.include?(taxon.id) %>>
+                            <%= taxon.pretty_name %>
+                          </option>
+                        <% end %>
+                      </select>
+                    </div>
+                  </div>
+              </div>
+
+              <%# Hidden detail input – read/written by Description & SEO modal -%>
+              <%# Use rich_text_detail directly because product_decorator overrides :detail with attr_accessor (returns nil) -%>
+              <%# Extract inner HTML from ActionText's .trix-content wrapper so Trix editor receives the format it expects -%>
+              <%
+                detail_html_wrapped = product.rich_text_detail&.body&.to_s || ''
+                if detail_html_wrapped.present?
+                  doc = Nokogiri::HTML.fragment(detail_html_wrapped)
+                  trix_content_div = doc.at_css('.trix-content')
+                  detail_html = trix_content_div ? trix_content_div.inner_html : detail_html_wrapped
+                else
+                  detail_html = ''
+                end
+                detail_plain = detail_html.present? ? ActionController::Base.helpers.strip_tags(detail_html).gsub(/\s+/, ' ').strip : ''
+              %>
+              <input type="hidden"
+                     name="product_updates[<%= p_id %>][detail]"
+                     data-role="row-detail-input"
+                     data-plain-text="<%= CGI.escapeHTML(detail_plain) %>"
+                     value="<%= detail_html %>">
+
+              <%# ── Description & SEO Section ─────────────────────────── -%>
+              <div class="card mt-2 border-light">
+                <div class="card-header d-flex align-items-center justify-content-between py-2"
+                     style="cursor:pointer; background:#f8f9fa;"
+                     data-action="toggle-description-seo-section"
+                     data-row-index="<%= row_idx %>">
+                  <div class="d-flex align-items-center" style="gap:6px;">
+                    <span data-role="description-seo-chevron"
+                          style="display:inline-block; transform:rotate(0deg); transition:transform 0.2s;">
+                      <%= render partial: 'svg_icon', locals: { icon: 'chevron-right', size: 12 } %>
+                    </span>
+                    <%= render partial: 'svg_icon', locals: { icon: 'edit', size: 14 } %>
+                    <strong class="small">Description & SEO</strong>
+                    <% if detail_html.present? || product.meta_title.present? %>
+                      <span class="badge badge-success ml-1" style="font-size:0.7em;">has data</span>
+                    <% end %>
+                  </div>
+                  <button type="button"
+                          class="btn btn-primary btn-sm"
+                          data-action="open-description-seo-modal"
+                          data-row-index="<%= row_idx %>">
+                    <%= Spree.t(:manage_description_seo, default: 'Manage') %>
+                  </button>
+                </div>
+                <div class="card-body p-2"
+                     data-role="description-seo-content"
+                     data-row-index="<%= row_idx %>"
+                     style="display:none;">
+                  <div data-role="description-seo-summary" data-row-index="<%= row_idx %>">
+                    <%# Render initial summary server-side so it's correct without JS -%>
+                    <% has_desc_seo = detail_plain.present? || product.meta_title.present? || product.meta_keywords.present? || product.meta_description.present? %>
+                    <% if has_desc_seo %>
+                      <dl class="row mb-0" style="font-size:0.9em;">
+                        <% if detail_plain.present? %>
+                          <% truncated_detail = detail_plain.length > 100 ? detail_plain[0, 100] + '...' : detail_plain %>
+                          <dt class="col-sm-3">Detail:</dt>
+                          <dd class="col-sm-9"><%= truncated_detail %></dd>
+                        <% end %>
+                        <% if product.meta_title.present? %>
+                          <dt class="col-sm-3">Meta Title:</dt>
+                          <dd class="col-sm-9"><%= product.meta_title %></dd>
+                        <% end %>
+                        <% if product.meta_keywords.present? %>
+                          <dt class="col-sm-3">Meta Keywords:</dt>
+                          <dd class="col-sm-9"><%= product.meta_keywords %></dd>
+                        <% end %>
+                        <% if product.meta_description.present? %>
+                          <% truncated_meta_desc = product.meta_description.length > 100 ? product.meta_description[0, 100] + '...' : product.meta_description %>
+                          <dt class="col-sm-3">Meta Description:</dt>
+                          <dd class="col-sm-9"><%= truncated_meta_desc %></dd>
+                        <% end %>
+                      </dl>
+                    <% else %>
+                      <p class="text-muted mb-0 small">Click "Manage" to edit product detail and SEO fields.</p>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+              <%# ── / Description & SEO Section ──────────────────────── -%>
+
+              <%# ── Variants (via modal – same UI as create mode) ──────── -%>
+              <%
+                # Serialize existing variants to JSON for pre-populating the modal
+                if non_master_variants.any?
+                  ot_ids = non_master_variants.flat_map { |v| v.option_values.map { |ov| ov.option_type_id.to_s } }.uniq
+                  variants_json = non_master_variants.map do |v|
+                    vp = v.prices.detect { |p| p.currency == currency }
+                    {
+                      id:               v.id,
+                      db_id:            v.id,
+                      option_values:    v.option_values.each_with_object({}) { |ov, h| h[ov.option_type_id.to_s] = ov.id.to_s },
+                      options_text:     v.options_text.to_s,
+                      display_name:     v.options_text.presence || v.sku.to_s,
+                      sku:              v.sku.to_s,
+                      price:            vp&.amount.to_s,
+                      compare_at_price: vp&.compare_at_amount.to_s,
+                      cost_price:       v.cost_price.to_s,
+                      weight:           v.weight.to_s,
+                      height:           v.height.to_s,
+                      width:            v.width.to_s,
+                      depth:            v.depth.to_s
+                    }
+                  end
+                  initial_variants_json = ERB::Util.html_escape({ option_types: ot_ids, variants: variants_json }.to_json)
+                else
+                  initial_variants_json = ERB::Util.html_escape({ option_types: [], variants: [] }.to_json)
+                end
+              %>
+              <div class="card mt-2 border-light">
+                <div class="card-header d-flex align-items-center justify-content-between py-2"
+                     style="cursor:pointer; background:#f8f9fa;"
+                     data-action="toggle-variants-section"
+                     data-row-index="<%= row_idx %>">
+                  <div class="d-flex align-items-center" style="gap:6px;">
+                    <span data-role="variants-chevron"
+                          style="display:inline-block; transform:rotate(0deg); transition:transform 0.2s;">
+                      <%= render partial: 'svg_icon', locals: { icon: 'chevron-right', size: 12 } %>
+                    </span>
+                    <%= render partial: 'svg_icon', locals: { icon: 'layers', size: 14 } %>
+                    <strong class="small">Variants</strong>
+                    <% if non_master_variants.any? %>
+                      <span class="badge badge-success ml-1" style="font-size:0.7em;"><%= non_master_variants.size %> existing</span>
+                    <% end %>
+                  </div>
+                  <button type="button"
+                          class="btn btn-primary btn-sm"
+                          data-action="open-variant-modal"
+                          data-row-index="<%= row_idx %>">
+                    <%= Spree.t(:manage_variants, default: 'Manage Variants') %>
+                  </button>
+                </div>
+                <div class="card-body p-2"
+                     data-role="variants-content"
+                     data-row-index="<%= row_idx %>"
+                     style="display:none;">
+                  <div data-role="variants-summary" data-row-index="<%= row_idx %>">
+                    <p class="text-muted mb-0 small"><%= Spree.t(:no_variants_configured, default: 'No variants configured') %></p>
+                  </div>
+                  <div data-role="variants-data"
+                       data-row-index="<%= row_idx %>"
+                       data-variants="<%= initial_variants_json %>"
+                       style="display:none;"></div>
+                </div>
+              </div>
+              <%# ── / Variants ───────────────────────────────────────── -%>
+
+              <%# ── Stock Management (via stock modal) ──────────────── -%>
+              <%
+                # Collect stock items for all variants (master + non-master)
+                # Use preloaded stock_locations from stock_items to avoid N+1 queries
+                all_variants = [product.master] + non_master_variants
+                stock_items_data = {}
+                
+                # Get vendor's stock location(s) from preloaded stock_items
+                # This avoids additional database queries
+                vendor_stock_locations = []
+                vendor_stock_location_ids = []
+                
+                if product.respond_to?(:vendor) && product.vendor.present?
+                  # Collect unique stock locations from preloaded stock_items
+                  vendor_stock_location_map = {}
+                  all_variants.each do |variant|
+                    variant.stock_items.each do |stock_item|
+                      if stock_item.stock_location&.vendor_id == product.vendor_id
+                        vendor_stock_location_map[stock_item.stock_location_id] = stock_item.stock_location
+                      end
+                    end
+                  end
+                  vendor_stock_locations = vendor_stock_location_map.values
+                  vendor_stock_location_ids = vendor_stock_location_map.keys
+                else
+                  # Fallback to @stock_locations (preloaded in controller)
+                  vendor_stock_locations = @stock_locations || []
+                  vendor_stock_location_ids = vendor_stock_locations.map(&:id)
+                end
+                
+                all_variants.each do |variant|
+                  variant.stock_items.each do |stock_item|
+                    # Only include stock items for vendor's stock location
+                    next unless vendor_stock_location_ids.include?(stock_item.stock_location_id)
+                    
+                    stock_items_data[variant.id] ||= {}
+                    stock_items_data[variant.id][stock_item.stock_location_id] = {
+                      count_on_hand: stock_item.count_on_hand,
+                      backorderable: stock_item.backorderable
+                    }
+                  end
+                end
+                
+                initial_stock_json = ERB::Util.html_escape({ stock_items: stock_items_data }.to_json)
+                total_stock_locations = stock_items_data.values.flat_map(&:keys).uniq.size
+              %>
+              <div class="card mt-2 border-light">
+                <div class="card-header d-flex align-items-center justify-content-between py-2"
+                     style="cursor:pointer; background:#f8f9fa;"
+                     data-action="toggle-stock-section"
+                     data-row-index="<%= row_idx %>">
+                  <div class="d-flex align-items-center" style="gap:6px;">
+                    <span data-role="stock-chevron"
+                          style="display:inline-block; transform:rotate(0deg); transition:transform 0.2s;">
+                      <%= render partial: 'svg_icon', locals: { icon: 'chevron-right', size: 12 } %>
+                    </span>
+                    <%= render partial: 'svg_icon', locals: { icon: 'home', size: 14 } %>
+                    <strong class="small">Stock</strong>
+                    <% if total_stock_locations > 0 %>
+                      <span class="badge badge-success ml-1" style="font-size:0.7em;">configured</span>
+                    <% end %>
+                    <span class="badge badge-primary ml-1" style="font-size:0.7em; display:none;"
+                          data-role="stock-badge" data-row-index="<%= row_idx %>"></span>
+                  </div>
+                  <button type="button"
+                          class="btn btn-primary btn-sm"
+                          data-action="open-stock-modal"
+                          data-row-index="<%= row_idx %>">
+                    <%= Spree.t(:manage_stock, default: 'Manage Stock') %>
+                  </button>
+                </div>
+                <div class="card-body p-2"
+                     data-role="stock-content"
+                     data-row-index="<%= row_idx %>"
+                     style="display:none;">
+                  <div data-role="stock-summary" data-row-index="<%= row_idx %>">
+                    <% if stock_items_data.any? %>
+                      <div class="table-responsive">
+                        <table class="table table-bordered table-sm mb-0">
+                          <thead class="thead-light">
+                            <tr>
+                              <th><%= Spree.t(:variant, default: 'Variant') %></th>
+                              <th class="text-center" style="width:150px;"><%= Spree.t(:count_on_hand, default: 'Count on Hand') %></th>
+                              <th class="text-center" style="width:150px;"><%= Spree.t(:backorderable, default: 'Backorderable') %></th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <% all_variants.each do |variant| %>
+                              <% variant_stock = stock_items_data[variant.id] || {} %>
+                              <% next if variant_stock.empty? %>
+                              <% 
+                                # Get first stock location's data (typically only one location)
+                                stock_location_id = variant_stock.keys.first
+                                stock_data = variant_stock[stock_location_id]
+                              %>
+                              <tr>
+                                <td>
+                                  <strong><%= variant.is_master? ? 'Master' : (variant.options_text.presence || variant.sku.to_s) %></strong>
+                                  <% if variant.sku.present? %>
+                                    <div><small class="text-muted">SKU: <%= variant.sku %></small></div>
+                                  <% end %>
+                                </td>
+                                <td class="text-center">
+                                  <%= stock_data[:count_on_hand] || 0 %>
+                                </td>
+                                <td class="text-center">
+                                  <% if stock_data[:backorderable] %>
+                                    <span class="badge badge-success">Yes</span>
+                                  <% else %>
+                                    <span class="badge badge-secondary">No</span>
+                                  <% end %>
+                                </td>
+                              </tr>
+                            <% end %>
+                          </tbody>
+                        </table>
+                      </div>
+                    <% else %>
+                      <p class="text-muted mb-0 small">No stock configured. Click "Manage Stock" to add.</p>
+                    <% end %>
+                  </div>
+                  <div data-role="stock-data"
+                       data-row-index="<%= row_idx %>"
+                       data-stock="<%= initial_stock_json %>"
+                       data-stock-locations="<%= ERB::Util.html_escape(vendor_stock_locations.map { |loc| { id: loc.id, name: loc.name } }.to_json) %>"
+                       style="display:none;"></div>
+                </div>
+              </div>
+              <%# ── / Stock Management ───────────────────────────────── -%>
+
+              <%# ── Price Management (via price modal) ──────────────── -%>
+              <%
+                # Collect prices for all variants (master + non-master)
+                # Use preloaded prices to avoid N+1 queries
+                all_variants_for_prices = [product.master] + non_master_variants
+                price_data = {}
+                default_currency = @default_price_currency || Spree::Config[:currency]
+                
+                # Build variant list for price modal (similar to variants modal)
+                variants_for_price_modal = all_variants_for_prices.map do |variant|
+                  default_price = variant.prices.find { |p| p.currency == default_currency }
+                  
+                  # Collect price data if exists
+                  if default_price
+                    price_data[variant.id] = {
+                      price: default_price.amount.to_s,
+                      compare_price: default_price.compare_at_price.to_s,
+                      currency: default_price.currency
+                    }
+                  end
+                  
+                  # Build variant info for modal display
+                  {
+                    id: variant.id,
+                    is_master: variant.is_master?,
+                    display_name: variant.is_master? ? 'Master' : (variant.options_text.presence || variant.sku.to_s),
+                    options_text: variant.options_text.to_s,
+                    sku: variant.sku.to_s
+                  }
+                end
+                
+                initial_price_json = ERB::Util.html_escape(price_data.to_json)
+                variants_list_json = ERB::Util.html_escape(variants_for_price_modal.to_json)
+                total_variants_with_prices = price_data.size
+              %>
+              <div class="card mt-2 border-light">
+                <div class="card-header d-flex align-items-center justify-content-between py-2"
+                     style="cursor:pointer; background:#f8f9fa;"
+                     data-action="toggle-price-section"
+                     data-row-index="<%= row_idx %>">
+                  <div class="d-flex align-items-center" style="gap:6px;">
+                    <span data-role="price-chevron"
+                          style="display:inline-block; transform:rotate(0deg); transition:transform 0.2s;">
+                      <%= render partial: 'svg_icon', locals: { icon: 'chevron-right', size: 12 } %>
+                    </span>
+                    <%= render partial: 'svg_icon', locals: { icon: 'tag', size: 14 } %>
+                    <strong class="small">Prices</strong>
+                    <% if total_variants_with_prices > 0 %>
+                      <span class="badge badge-success ml-1" style="font-size:0.7em;">configured</span>
+                    <% end %>
+                    <span class="badge badge-primary ml-1" style="font-size:0.7em; display:none;"
+                          data-role="price-badge" data-row-index="<%= row_idx %>"></span>
+                  </div>
+                  <button type="button"
+                          class="btn btn-primary btn-sm"
+                          data-action="open-price-modal"
+                          data-row-index="<%= row_idx %>">
+                    <%= Spree.t(:manage_prices, default: 'Manage Prices') %>
+                  </button>
+                </div>
+                <div class="card-body p-2"
+                     data-role="price-content"
+                     data-row-index="<%= row_idx %>"
+                     style="display:none;">
+                  <div data-role="price-summary" data-row-index="<%= row_idx %>">
+                    <% if variants_for_price_modal.any? %>
+                      <div class="table-responsive">
+                        <table class="table table-bordered table-sm mb-0">
+                          <colgroup>
+                            <col style="width: 30%">
+                            <col style="width: 15%">
+                            <col style="width: 25%">
+                            <col style="width: 30%">
+                          </colgroup>
+                          <thead class="thead-light">
+                            <tr>
+                              <th><%= Spree.t(:options, default: 'Options') %></th>
+                              <th class="text-center"><%= Spree.t(:currency, default: 'Currency') %></th>
+                              <th><%= Spree.t(:price, default: 'Price') %></th>
+                              <th><%= Spree.t(:compare_at_price, default: 'Compare at Price') %></th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <% variants_for_price_modal.each do |variant_info| %>
+                              <% variant_id = variant_info[:id] %>
+                              <% is_master = variant_info[:is_master] %>
+                              <% display_name = variant_info[:display_name] %>
+                              <% sku = variant_info[:sku] %>
+                              <% variant_price_data = price_data[variant_id] %>
+                              <tr>
+                                <td>
+                                  <div><strong><%= display_name %></strong></div>
+                                  <% if sku.present? %>
+                                    <div><small class="text-muted">SKU: <%= sku %></small></div>
+                                  <% end %>
+                                </td>
+                                <td class="text-center">
+                                  <span class="text-muted"><%= variant_price_data ? variant_price_data[:currency] : default_currency %></span>
+                                </td>
+                                <td>
+                                  <% if variant_price_data && variant_price_data[:price].present? %>
+                                    <%= variant_price_data[:price] %>
+                                  <% else %>
+                                    <span class="text-muted">—</span>
+                                  <% end %>
+                                </td>
+                                <td>
+                                  <% if variant_price_data && variant_price_data[:compare_price].present? %>
+                                    <%= variant_price_data[:compare_price] %>
+                                  <% else %>
+                                    <span class="text-muted">—</span>
+                                  <% end %>
+                                </td>
+                              </tr>
+                            <% end %>
+                          </tbody>
+                        </table>
+                      </div>
+                    <% else %>
+                      <p class="text-muted mb-0 small">No prices configured. Click "Manage Prices" to add.</p>
+                    <% end %>
+                  </div>
+                  <input type="hidden"
+                         data-role="price-data"
+                         data-row-index="<%= row_idx %>"
+                         value="<%= initial_price_json %>">
+                  <input type="hidden"
+                         data-role="price-variants-list"
+                         data-row-index="<%= row_idx %>"
+                         value="<%= variants_list_json %>">
+                </div>
+              </div>
+              <%# ── / Price Management ───────────────────────────────── -%>
+
+              <%# ── Images (via images modal) ────────────────────────── -%>
+              <% existing_images = product.images %>
+              <div class="card mt-2 border-light">
+                <div class="card-header d-flex align-items-center justify-content-between py-2"
+                     style="cursor:pointer; background:#f8f9fa;"
+                     data-action="toggle-images-section"
+                     data-row-index="<%= row_idx %>">
+                  <div class="d-flex align-items-center" style="gap:6px;">
+                    <span data-role="images-chevron"
+                          style="display:inline-block; transform:rotate(0deg); transition:transform 0.2s;">
+                      <%= render partial: 'svg_icon', locals: { icon: 'chevron-right', size: 12 } %>
+                    </span>
+                    <strong class="small">Images</strong>
+                    <% if existing_images.any? %>
+                      <span class="badge badge-success ml-1" style="font-size:0.7em;"><%= existing_images.size %> existing</span>
+                    <% end %>
+                    <span class="badge badge-primary ml-1" style="font-size:0.7em; display:none;"
+                          data-role="images-count-badge" data-row-index="<%= row_idx %>"></span>
+                  </div>
+                  <button type="button"
+                          class="btn btn-primary btn-sm"
+                          data-action="open-images-modal"
+                          data-row-index="<%= row_idx %>">
+                    <%= Spree.t(:manage_images, default: 'Add Images') %>
+                  </button>
+                </div>
+                <div class="card-body p-2"
+                     data-role="images-content"
+                     data-row-index="<%= row_idx %>"
+                     style="display:none;">
+                  <%# Existing images (server-rendered, read-only) -%>
+                  <% if existing_images.any? %>
+                    <div class="mb-3">
+                      <small class="font-weight-semibold text-muted d-block mb-1">Existing Images (<%= existing_images.size %>)</small>
+                      <div class="d-flex flex-wrap" style="gap:6px;">
+                        <% existing_images.each do |img| %>
+                          <% next unless img.attachment.attached? rescue next %>
+                          <div style="position:relative; width:72px;" title="<%= img.alt %>">
+                            <%= image_tag main_app.rails_blob_path(img.attachment, only_path: true),
+                                  alt: img.alt.to_s,
+                                  style: 'width:72px; height:72px; object-fit:cover; border-radius:4px; border:1px solid #dee2e6;' rescue nil %>
+                            <% if img.alt.present? %>
+                              <small class="d-block text-truncate text-muted" style="font-size:10px; max-width:72px;"><%= img.alt %></small>
+                            <% end %>
+                          </div>
+                        <% end %>
+                      </div>
+                    </div>
+                    <hr class="my-2">
+                  <% end %>
+                  <%# New images queue (managed by ImageManager JS) -%>
+                  <small class="font-weight-semibold text-muted d-block mb-1">New Images to Upload</small>
+                  <div data-role="images-summary" data-row-index="<%= row_idx %>">
+                    <p class="text-muted mb-0 small">No new images queued. Click "Add Images" to upload.</p>
+                  </div>
+                </div>
+              </div>
+              <%# ── / Images ────────────────────────────────────────── -%>
+
+            </div><%# /card-body -%>
+          </div><%# /card -%>
+        <% end %><%# /each product -%>
+
+        <%# Pagination -%>
+        <% if @update_products.respond_to?(:total_pages) && @update_products.total_pages > 1 %>
+          <nav class="d-flex justify-content-center mt-3" aria-label="Product pages">
+            <ul class="pagination pagination-sm">
+              <% (1..@update_products.total_pages).each do |p_num| %>
+                <li class="page-item <%= 'active' if p_num == (@update_products.current_page || 1) %>">
+                  <%= link_to p_num,
+                        spree.new_admin_product_import_file_path(
+                          mode: 'update',
+                          update_vendor_id: @update_vendor_id,
+                          update_per_page: params[:update_per_page],
+                          update_page: p_num
+                        ),
+                        class: 'page-link' %>
+                </li>
+              <% end %>
+            </ul>
+          </nav>
+        <% end %>
+
+        <%# Bottom save button -%>
+        <div class="d-flex justify-content-end mt-3">
+          <button type="button" class="btn btn-success update-save-btn" disabled>
+            <%= render partial: 'svg_icon', locals: { icon: 'check', size: 14, css_class: 'mr-1' } %>
+            Save Updates
+          </button>
+        </div>
+
+      <% end %><%# /form_tag PATCH -%>
+
+    <% end %><%# /if update_products any -%>
+  <% else %>
+    <div class="alert alert-secondary">Use the vendor filter or product search above to load products for editing.</div>
+  <% end %>
+
+</div><%# /update-products-section -%>
+

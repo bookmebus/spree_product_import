@@ -1,0 +1,85 @@
+<%# SVG Icon Helper Partial %>
+<%# Usage: <%= render partial: 'svg_icon', locals: { icon: 'chevron-right', size: 12, css_class: '' } %>
+<%# Available icons: 'chevron-right', 'search', 'truck', 'home', 'tag' %>
+<%
+  icon_name = local_assigns[:icon] || 'chevron-right'
+  size = local_assigns[:size] || 16
+  css_class = local_assigns[:css_class] || ''
+
+  case icon_name %>
+<% when 'chevron-right' %>
+  <svg xmlns="http://www.w3.org/2000/svg" 
+       xmlns:xlink="http://www.w3.org/1999/xlink" 
+       width="<%= size %>px" 
+       height="<%= size %>px" 
+       viewBox="0 0 2134 2134" 
+       version="1.1" 
+       xml:space="preserve" 
+       style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;" 
+       class="icon-chevron-right <%= css_class %>">
+    <path fill="currentColor" 
+          d="M1571.72,1023.16l-923.077,-923.077c-24.039,-24.038 -62.981,-24.038 -87.019,0c-24.039,24.039 -24.039,62.981 0,87.019l879.567,879.568l-879.567,879.567c-24.039,24.039 -24.039,62.981 0,87.019c12.019,12.02 27.724,18.029 43.509,18.029c15.785,0 31.491,-6.009 43.51,-18.029l923.077,-923.077c24.038,-24.038 24.038,-62.98 0,-87.019Z" 
+          style="fill-rule:nonzero;stroke:currentColor;stroke-width:75px;">
+    </path>
+  </svg>
+
+<% when 'search' %>
+  <svg xmlns="http://www.w3.org/2000/svg" 
+       width="<%= size %>" 
+       height="<%= size %>" 
+       fill="currentColor" 
+       viewBox="0 0 16 16"
+       class="icon-search <%= css_class %>">
+    <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+  </svg>
+
+<% when 'truck' %>
+  <svg xmlns="http://www.w3.org/2000/svg"
+       width="<%= size %>"
+       height="<%= size %>"
+       viewBox="0 0 24 24"
+       fill="none"
+       stroke="currentColor"
+       stroke-width="2"
+       stroke-linecap="round"
+       stroke-linejoin="round"
+       class="icon-truck <%= css_class %>">
+    <rect x="1" y="3" width="15" height="13" rx="1"/>
+    <path d="M16 8h4l3 5v4h-7V8z"/>
+    <circle cx="5.5" cy="18.5" r="2.5"/>
+    <circle cx="18.5" cy="18.5" r="2.5"/>
+  </svg>
+
+<% when 'home' %>
+  <svg xmlns="http://www.w3.org/2000/svg"
+       width="<%= size %>"
+       height="<%= size %>"
+       viewBox="0 0 24 24"
+       fill="none"
+       stroke="currentColor"
+       stroke-width="2"
+       stroke-linecap="round"
+       stroke-linejoin="round"
+       class="icon-home <%= css_class %>">
+    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+    <polyline points="9 22 9 12 15 12 15 22"/>
+  </svg>
+
+<% when 'tag' %>
+  <svg xmlns="http://www.w3.org/2000/svg"
+       width="<%= size %>"
+       height="<%= size %>"
+       viewBox="0 0 24 24"
+       fill="none"
+       stroke="currentColor"
+       stroke-width="2"
+       stroke-linecap="round"
+       stroke-linejoin="round"
+       class="icon-tag <%= css_class %>">
+    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+    <line x1="7" y1="7" x2="7.01" y2="7"/>
+  </svg>
+
+<% else %>
+  <!-- Unknown icon: <%= icon_name %> -->
+<% end %>

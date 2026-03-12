@@ -1,29 +1,473 @@
-<%= render partial: 'spree/admin/shared/error_messages', locals: { target: @product } %>
+<% content_for :head do %>
+  <link rel="stylesheet" href="https://unpkg.com/trix@2.0.0/dist/trix.css">
+  <script src="https://unpkg.com/trix@2.0.0/dist/trix.umd.min.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <%= javascript_include_tag 'spree/backend/spree_product_import' %>
+  <script>
+    // Prevent file attachments in Trix
+    document.addEventListener('trix-file-accept', function(event) {
+      event.preventDefault();
+      alert('File attachments are not supported in this editor');
+    });
+  </script>
+  <style>
+    /* Trix Editor Customization */
+    #description-seo-modal trix-editor {
+      min-height: 150px;
+      max-height: 600px;
+      overflow-y: auto;
+      border: 1px solid #ced4da;
+      border-radius: 0.25rem;
+      padding: 0.375rem 0.75rem;
+    }
+    #description-seo-modal trix-editor:focus {
+      border-color: #80bdff;
+      outline: 0;
+      box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+    #description-seo-modal trix-toolbar {
+      border: 1px solid #ced4da;
+      border-bottom: none;
+      border-radius: 0.25rem 0.25rem 0 0;
+      background-color: #f8f9fa;
+    }
+    #description-seo-modal trix-toolbar .trix-button-group--file-tools {
+      display: none;
+    }
+    /* Flatpickr calendar must sit above all modals (z-index 9998/10000) */
+    .flatpickr-calendar {
+      z-index: 99999 !important;
+    }
+    /* XLSX Import - Disabled rows (exceeds limit) */
+    .xlsx-import-row-disabled {
+      background-color: #f8d7da !important;
+      color: #721c24;
+      opacity: 0.7;
+      text-decoration: line-through;
+    }
+    .xlsx-import-row-disabled td {
+      color: #721c24;
+    }
+  </style>
+  <script>
+    // Pass option types data to JavaScript module
+    window.spreeProductImportOptionTypes = <%= raw (@option_types || []).map { |ot| { id: ot.id, name: ot.name, presentation: ot.presentation, option_values: ot.option_values.map { |ov| { id: ov.id, name: ov.name, presentation: ov.presentation } } } }.to_json %>;
+    // Pass stock locations data to JavaScript module
+    window.spreeProductImportStockLocations = <%= raw (@stock_locations || []).map { |sl| { id: sl.id, name: sl.name } }.to_json %>;
+    // Pass currency to JavaScript module
+    window.spreeProductImportCurrency = '<%= @default_price_currency || Spree::Config[:currency] %>';
+  </script>
+<% end %>
+
+<%= render partial: 'spree/admin/shared/error_messages', locals: { target: @product_import_file } %>
 
 <% content_for :page_title do %>
   <%= link_to Spree.t(:product_imports), spree.admin_product_import_files_url %> /
   <%= Spree.t(:new_product_import) %>
 <% end %>
 
-<%= form_for([:admin, @product_import_file], :method => :post, :html => { :multipart => true }) do |f| %>
+<% @mode ||= 'create' %>
 
-   <div data-hook="admin_product_import_form_name">
-      <%= f.field_container :name, class: ['form-group'] do %>
-         <%= f.label :name, Spree.t(:name) %>
-         <%= f.text_field :name, class: 'form-control title' %>
-         <%= f.error_message_on :name %>
-      <% end %>
-   </div>
+<ul class="nav nav-tabs mb-4">
+  <li class="nav-item">
+    <%= link_to 'Create Products', spree.new_admin_product_import_file_path, class: "nav-link #{@mode == 'create' ? 'active' : ''}" %>
+  </li>
+  <li class="nav-item">
+    <%= link_to 'Update Products', spree.new_admin_product_import_file_path(mode: 'update'), class: "nav-link #{@mode == 'update' ? 'active' : ''}" %>
+  </li>
+</ul>
 
-   <div data-hook="admin_product_import_form_file">
-      <%= f.field_container :file, class: ['form-group'] do %>
-         <%= f.label :file, Spree.t(:file)  %>
-         <%= f.file_field :file, accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', class: ''  %>
-         <%= f.error_message_on :file %>
-      <% end %>
-   </div>
+<% if @mode != 'update' %>
+<% rows = @product_import_rows.presence || [{ name: '', _selected: '0' }] %>
 
-   <div data-hook="admin_product_import_form_file">
-      <%= render partial: 'spree/admin/shared/new_resource_links' %>
-   </div>
+<%= form_tag(spree.admin_product_import_files_path, method: :post, multipart: true) do %>
+   <%# Hidden inputs filled by FileImporter JS to carry the xlsx file for ProductImportFile record tracking %>
+   <input type="file" id="xlsx-carry-file-input" name="xlsx_import_file" style="display:none" accept=".xlsx,.xls,.csv">
+   <input type="hidden" id="xlsx-import-name-input" name="xlsx_import_name" value="">
+
+   <fieldset data-hook="new_product_import">
+      <div class="d-flex justify-content-between align-items-center mb-3" data-hook="admin_product_import_table_actions">
+         <h5 class="m-0"><%= Spree.t(:product_import) %></h5>
+      </div>
+
+      <!-- ====== Import Name Section ====== -->
+      <div class="card mb-4">
+         <div class="card-body">
+            <div class="form-group mb-0">
+               <label for="import-name-input">
+                  <%= Spree.t(:import_name) %>
+                  <span class="text-muted small">(<%= Spree.t(:import_name_help) %>)</span>
+               </label>
+               <input 
+                  type="text" 
+                  class="form-control" 
+                  id="import-name-input" 
+                  name="import_name" 
+                  placeholder="e.g., New Summer Collection 2026"
+                  value="">
+            </div>
+         </div>
+      </div>
+
+      <!-- ====== Import from File Section ====== -->
+      <div class="card mb-4" id="xlsx-import-section" data-hook="admin_product_import_file_section">
+         <div class="card-header d-flex align-items-center justify-content-between"
+              style="cursor: pointer; user-select: none;"
+              data-action="toggle-xlsx-import-section"
+              aria-expanded="true">
+            <div class="d-flex align-items-center" style="gap: 8px;">
+               <span id="xlsx-import-chevron" style="display: inline-block; transform: rotate(90deg); transition: transform 0.2s;">
+                  <%= render partial: 'svg_icon', locals: { icon: 'chevron-right', size: 12 } %>
+               </span>
+               <h5 class="mb-0"><%= Spree.t(:import_from_file, default: 'Import Products from File') %></h5>
+            </div>
+            <span class="text-muted small">Supported formats: <strong>.xlsx</strong>, <strong>.csv</strong></span>
+         </div>
+         <div class="card-body" id="xlsx-import-body">
+            <p class="text-muted mb-3">
+               Upload a spreadsheet with columns <strong>Name</strong>, <strong>SKU</strong>, and <strong>Price</strong> to automatically populate the product rows below.
+            </p>
+
+            <div class="form-group mb-2">
+               <label for="xlsx-import-file-input" class="font-weight-semibold">Select file</label>
+               <div class="input-group">
+                  <div class="custom-file">
+                     <input
+                        type="file"
+                        class="custom-file-input"
+                        id="xlsx-import-file-input"
+                        accept=".xlsx,.xls,.csv"
+                     />
+                     <label class="custom-file-label" for="xlsx-import-file-input">Choose .xlsx or .csv file&hellip;</label>
+                  </div>
+               </div>
+            </div>
+
+            <!-- Feedback messages -->
+            <div id="xlsx-import-feedback"></div>
+
+            <!-- Row preview (shown after a file is parsed) -->
+            <div id="xlsx-import-preview" style="display: none;">
+               <div id="xlsx-import-warnings"></div>
+
+               <div class="d-flex align-items-center justify-content-between mb-2" style="gap: 8px;">
+                  <span class="badge badge-primary" id="xlsx-import-count-label"></span>
+               </div>
+
+               <div class="table-responsive mb-3" style="max-height: 280px; overflow-y: auto;">
+                  <table class="table table-sm table-bordered mb-0">
+                     <thead class="thead-light" style="position: sticky; top: 0;">
+                        <tr>
+                           <th style="width: 40px;">#</th>
+                           <th>Name <span class="text-danger">*</span></th>
+                           <th>SKU</th>
+                           <th>Price <span class="text-danger">*</span></th>
+                        </tr>
+                     </thead>
+                     <tbody id="xlsx-import-preview-tbody"></tbody>
+                  </table>
+               </div>
+
+               <div class="d-flex" style="gap: 8px;">
+                  <button type="button" class="btn btn-primary btn-sm" id="xlsx-import-confirm-btn">Import rows</button>
+                  <button type="button" class="btn btn-outline-secondary btn-sm" id="xlsx-import-cancel-btn">Cancel</button>
+               </div>
+            </div>
+         </div>
+      </div>
+      <!-- ====== / Import from File Section ====== -->
+
+      <%# ── Action List Toolbar ──────────────────────────────────────── %>
+      <div class="mb-3" style="position: sticky; top: 0; z-index: 100; background: white; padding: 12px 0; margin-bottom: 0 !important;">
+         <h5 class="m-0 mb-3">Action List</h5>
+         <div class="d-flex flex-wrap align-items-center" style="gap: 8px;">
+            <button type="button" class="btn btn-outline-secondary btn-sm"
+                    data-action="add-row">
+               <span class="icon icon-add mr-1"></span>
+               <%= Spree.t(:add_row, default: 'Add row') %>
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm"
+                    data-action="open-bulk-apply" data-field="available_on">
+               <span class="icon icon-calendar mr-1"></span>
+               Set Available On
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm"
+                    data-action="open-bulk-apply" data-field="shipping_category">
+               <%= render partial: 'svg_icon', locals: { icon: 'truck', size: 14, css_class: 'mr-1' } %>
+               Set Shipping Category
+            </button>
+            <% if defined?(Spree::Vendor) && @vendors.present? %>
+               <button type="button" class="btn btn-outline-secondary btn-sm"
+                       data-action="open-bulk-apply" data-field="vendor">
+                  <%= render partial: 'svg_icon', locals: { icon: 'home', size: 14, css_class: 'mr-1' } %>
+                  Set Vendor
+               </button>
+            <% end %>
+            <% if @taxons.present? %>
+               <button type="button" class="btn btn-outline-secondary btn-sm"
+                       data-action="open-bulk-apply" data-field="taxons">
+                  <%= render partial: 'svg_icon', locals: { icon: 'tag', size: 14, css_class: 'mr-1' } %>
+                  Set Taxons
+               </button>
+            <% end %>
+         </div>
+      </div>
+      <%# ── / Action List Toolbar ────────────────────────────────────── %>
+
+      <div class="table-responsive" data-hook="admin_product_import_table" style="margin-top: 12px; overflow: visible;">
+         <table class="table table-striped" id="product-import-table" data-next-index="<%= rows.length %>">
+            <%= render partial: 'table_header' %>
+            <tbody>
+               <% rows.each_with_index do |row, index| %>
+                  <% row_name = row[:name] || row['name'] %>
+                  <% row_sku = row[:sku] || row['sku'] %>
+                  <% row_prototype_id = row[:prototype_id] || row['prototype_id'] %>
+                  <% row_master_price = row[:master_price] || row['master_price'] %>
+                  <% row_available_on = row[:available_on] || row['available_on'] %>
+                  <% row_shipping_category_id = row[:shipping_category_id] || row['shipping_category_id'] %>
+                  <% row_vendor_id = row[:vendor_id] || row['vendor_id'] %>
+                  <% row_detail = row[:detail] || row['detail'] %>
+                  <% row_meta_title = row[:meta_title] || row['meta_title'] %>
+                  <% row_meta_keywords = row[:meta_keywords] || row['meta_keywords'] %>
+                  <% row_meta_description = row[:meta_description] || row['meta_description'] %>
+                  <% row_selected = row[:_selected] || row['_selected'] %>
+                  <% row_taxon_ids = (row[:taxon_ids] || row['taxon_ids'] || []).map(&:to_s) %>
+                  <% row_selected_value = row_selected.to_s.downcase %>
+                  <% row_variants = row[:variants] || row['variants'] || [] %>
+                  <% row_option_type_ids = row[:option_type_ids] || row['option_type_ids'] || [] %>
+                  <tr class="product-import-row" data-row-index="<%= index %>">
+                     <td class="text-left align-middle">
+                        <div class="d-flex align-items-center" style="gap: 8px;">
+                           <button type="button" class="btn btn-link btn-sm p-0" data-action="toggle-row" aria-expanded="true" aria-label="Toggle row">
+                              <span data-role="row-chevron" style="display: inline-block; transform: rotate(90deg);">
+                                 <%= render partial: 'svg_icon', locals: { icon: 'chevron-right', size: 12 } %>
+                              </span>
+                           </button>
+                           <span class="text-muted" data-role="row-index-label">Product <%= index + 1 %></span>
+                        </div>
+                     </td>
+                     <td class="text-right align-middle">
+                        <input
+                           type="checkbox"
+                           name="product_import_files[<%= index %>][_selected]"
+                           data-role="row-select"
+                           style="transform: scale(1.2);"
+                           <%= ['1', 'true', 'on'].include?(row_selected_value) ? 'checked' : '' %>
+                        />
+                     </td>
+                  </tr>
+                  <tr class="product-import-row-details" data-row-index="<%= index %>">
+                     <td colspan="2" style="background-color: rgba(0, 0, 0, 0.05);">
+                        <div class="row">
+                           <div class="col-12 col-md-4" data-hook="admin_product_import_form_name">
+                              <div class="form-group">
+                                 <label for="product_import_files_<%= index %>_name"><%= Spree.t(:name) %> <span class="required">*</span></label>
+                                 <%= text_field_tag "product_import_files[#{index}][name]", row_name, class: 'form-control title', required: true, id: "product_import_files_#{index}_name", data: { role: 'row-name-input' } %>
+                              </div>
+                           </div>
+                           <div class="col-12 col-md-4" data-hook="admin_product_import_form_sku">
+                              <div class="form-group">
+                                 <label for="product_import_files_<%= index %>_sku"><%= Spree.t(:sku) %></label>
+                                 <%= text_field_tag "product_import_files[#{index}][sku]", row_sku, class: 'form-control', id: "product_import_files_#{index}_sku", data: { role: 'row-sku-input' } %>
+                              </div>
+                           </div>
+                           <div class="col-12 col-md-4" data-hook="admin_product_import_form_prototype">
+                              <div class="form-group">
+                                 <label for="product_import_files_<%= index %>_prototype_id"><%= Spree.t(:prototype) %></label>
+                                 <%= select_tag "product_import_files[#{index}][prototype_id]",
+                                    options_for_select([[Spree.t('match_choices.none'), '']] + Spree::Prototype.all.map { |prototype| [prototype.name, prototype.id] }, row_prototype_id),
+                                    class: 'select2-clear w-100',
+                                    id: "product_import_files_#{index}_prototype_id",
+                                    data: { role: 'row-prototype-select' } %>
+                              </div>
+                           </div>
+                        </div>
+                        <div class="row">
+                           <div class="col-12 col-md-4" data-hook="admin_product_import_form_price">
+                              <div class="form-group">
+                                 <label for="product_import_files_<%= index %>_master_price"><%= Spree.t(:master_price) %> <span class="required">*</span></label>
+                                 <%= text_field_tag "product_import_files[#{index}][master_price]", row_master_price, class: 'form-control', required: true, id: "product_import_files_#{index}_master_price", data: { role: 'row-price-input' } %>
+                              </div>
+                           </div>
+                           <div class="col-12 col-md-4" data-hook="admin_product_import_form_available_on">
+                              <div class="form-group">
+                                 <label for="product_import_files_<%= index %>_available_on"><%= Spree.t(:available_on) %></label>
+                                 <div class="input-group datepicker"
+                                      data-wrap="true"
+                                      data-alt-format="<%= Spree.t(:fpr_human_friendly_date_format, scope: 'date_picker', default: 'M j, Y') %>">
+                                    <%= text_field_tag "product_import_files[#{index}][available_on]",
+                                       row_available_on,
+                                       placeholder: Spree.t(:select_a_date),
+                                       class: 'form-control shadow-none',
+                                       id: "product_import_files_#{index}_available_on",
+                                       'data-input': '',
+                                       data: { role: 'row-available-on-input' } %>
+                                    <%= render partial: 'spree/admin/shared/cal_close' %>
+                                 </div>
+                              </div>
+                           </div>
+                           <div class="col-12 col-md-4" data-hook="admin_product_import_form_shipping_categories">
+                              <div class="form-group">
+                                 <label for="product_import_files_<%= index %>_shipping_category_id"><%= Spree.t(:shipping_category) %> <span class="required">*</span></label>
+                                 <%= select_tag "product_import_files[#{index}][shipping_category_id]",
+                                    options_for_select([[Spree.t('match_choices.none'), '']] + (@shipping_categories || []).map { |category| [category.name, category.id] }, row_shipping_category_id),
+                                    class: 'select2 w-100',
+                                    required: true,
+                                    id: "product_import_files_#{index}_shipping_category_id",
+                                    data: { role: 'row-shipping-category-select' } %>
+                              </div>
+                           </div>
+                        </div>
+                        <div class="row">
+                           <div class="col-12 col-md-4" data-hook="admin_product_import_form_vendor">
+                              <div class="form-group">
+                                 <label for="product_import_files_<%= index %>_vendor_id"><%= Spree.t(:vendor, default: 'Vendor') %></label>
+                                 <%= select_tag "product_import_files[#{index}][vendor_id]",
+                                    options_for_select([[Spree.t('match_choices.none'), '']] + (@vendors || []).map { |vendor| [vendor.name, vendor.id] }, row_vendor_id),
+                                    class: 'select2 w-100',
+                                    id: "product_import_files_#{index}_vendor_id",
+                                    data: { role: 'row-vendor-select' } %>
+                              </div>
+                           </div>
+                           <div class="col-12 col-md-8" data-hook="admin_product_import_form_taxons">
+                              <div class="form-group">
+                                 <label for="product_import_files_<%= index %>_taxon_ids"><%= Spree.t(:taxons) %></label>
+                                 <select name="product_import_files[<%= index %>][taxon_ids][]" id="product_import_files_<%= index %>_taxon_ids" class="select2 w-100" multiple data-role="row-taxons-select">
+                                    <% (@taxons || []).each do |taxon| %>
+                                       <option value="<%= taxon.id %>" <%= row_taxon_ids.include?(taxon.id.to_s) ? 'selected' : '' %>><%= taxon.pretty_name %></option>
+                                    <% end %>
+                                 </select>
+                              </div>
+                           </div>
+                        </div>
+
+                        <!-- Description and SEO Section -->
+                        <div class="row mt-3" data-hook="admin_product_import_form_description_seo">
+                           <div class="col-12">
+                              <div class="card">
+                                 <div class="card-header d-flex justify-content-between align-items-center" style="cursor: pointer;" data-action="toggle-description-seo-section" data-row-index="<%= index %>">
+                                    <div class="d-flex align-items-center" style="gap: 8px;">
+                                       <span data-role="description-seo-chevron" style="display: inline-block; transform: rotate(<%= (row_detail.present? || row_meta_title.present? || row_meta_keywords.present? || row_meta_description.present?) ? '90deg' : '0deg' %>); transition: transform 0.2s;">
+                                          <%= render partial: 'svg_icon', locals: { icon: 'chevron-right', size: 12 } %>
+                                       </span>
+                                       <h6 class="mb-0"><%= Spree.t(:description_and_seo, default: 'Description & SEO') %></h6>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-primary" data-action="open-description-seo-modal" data-row-index="<%= index %>">
+                                       <%= Spree.t(:manage, default: 'Manage') %>
+                                    </button>
+                                 </div>
+                                 <div class="card-body" data-role="description-seo-content" data-row-index="<%= index %>" style="<%= (row_detail.present? || row_meta_title.present? || row_meta_keywords.present? || row_meta_description.present?) ? '' : 'display: none;' %>">
+                                    <div data-role="description-seo-summary" data-row-index="<%= index %>">
+                                       <% if row_detail.present? || row_meta_title.present? || row_meta_keywords.present? || row_meta_description.present? %>
+                                          <p class="text-success mb-0"><%= Spree.t(:description_seo_configured, default: 'Description and SEO information configured') %></p>
+                                       <% else %>
+                                          <p class="text-muted mb-0"><%= Spree.t(:no_description_seo_configured, default: 'No description or SEO information configured') %></p>
+                                       <% end %>
+                                    </div>
+                                    <!-- Hidden inputs for storing data -->
+                                    <%= hidden_field_tag "product_import_files[#{index}][detail]", row_detail, data: { role: 'row-detail-input' } %>
+                                    <%= hidden_field_tag "product_import_files[#{index}][meta_title]", row_meta_title, data: { role: 'row-meta-title-input' } %>
+                                    <%= hidden_field_tag "product_import_files[#{index}][meta_keywords]", row_meta_keywords, data: { role: 'row-meta-keywords-input' } %>
+                                    <%= hidden_field_tag "product_import_files[#{index}][meta_description]", row_meta_description, data: { role: 'row-meta-description-input' } %>
+                                 </div>
+                              </div>
+                           </div>
+                        </div>
+
+                        <!-- Variants Section -->
+                        <div class="row mt-3" data-hook="admin_product_import_form_variants">
+                           <div class="col-12">
+                              <div class="card">
+                                 <div class="card-header d-flex justify-content-between align-items-center" style="cursor: pointer;" data-action="toggle-variants-section" data-row-index="<%= index %>">
+                                    <div class="d-flex align-items-center" style="gap: 8px;">
+                                       <span data-role="variants-chevron" style="display: inline-block; transform: rotate(<%= row_variants.present? ? '90deg' : '0deg' %>); transition: transform 0.2s;">
+                                          <%= render partial: 'svg_icon', locals: { icon: 'chevron-right', size: 12 } %>
+                                       </span>
+                                       <h6 class="mb-0"><%= Spree.t(:product_variants, default: 'Product Variants') %></h6>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-primary" data-action="open-variant-modal" data-row-index="<%= index %>">
+                                       <%= Spree.t(:manage_variants, default: 'Manage Variants') %>
+                                    </button>
+                                 </div>
+                                 <div class="card-body" data-role="variants-content" data-row-index="<%= index %>" style="<%= row_variants.present? ? '' : 'display: none;' %>">
+                                    <div data-role="variants-summary" data-row-index="<%= index %>">
+                                       <% if row_variants.present? %>
+                                          <p class="text-success mb-0"><%= row_variants.length %> variant(s) configured</p>
+                                       <% else %>
+                                          <p class="text-muted mb-0"><%= Spree.t(:no_variants_configured, default: 'No variants configured') %></p>
+                                       <% end %>
+                                    </div>
+                                    <!-- Hidden container for storing variant data -->
+                                    <% 
+                                      variant_data_json = nil
+                                      if row_variants.present? || row_option_type_ids.present?
+                                        variant_data_json = {
+                                          option_types: row_option_type_ids,
+                                          variants: row_variants
+                                        }.to_json
+                                      end
+                                    %>
+                                    <div data-role="variants-data" data-row-index="<%= index %>" 
+                                         <%= "data-variants=\"#{ERB::Util.html_escape(variant_data_json)}\"".html_safe if variant_data_json %>
+                                         style="display: none;"></div>
+                                 </div>
+                              </div>
+                           </div>
+                        </div>
+
+                        <!-- Images Section -->
+                        <div class="row mt-3" data-hook="admin_product_import_form_images">
+                           <div class="col-12">
+                              <div class="card">
+                                 <div class="card-header d-flex justify-content-between align-items-center" style="cursor: pointer;" data-action="toggle-images-section" data-row-index="<%= index %>">
+                                    <div class="d-flex align-items-center" style="gap: 8px;">
+                                       <span data-role="images-chevron" style="display: inline-block; transform: rotate(0deg); transition: transform 0.2s;">
+                                          <%= render partial: 'svg_icon', locals: { icon: 'chevron-right', size: 12 } %>
+                                       </span>
+                                       <h6 class="mb-0"><%= Spree.t(:images, default: 'Images') %></h6>
+                                       <span class="badge badge-success" data-role="images-count-badge" data-row-index="<%= index %>" style="display: none;"></span>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-primary" data-action="open-images-modal" data-row-index="<%= index %>">
+                                       <%= Spree.t(:manage_images, default: 'Manage Images') %>
+                                    </button>
+                                 </div>
+                                 <div class="card-body" data-role="images-content" data-row-index="<%= index %>" style="display: none;">
+                                    <div data-role="images-summary" data-row-index="<%= index %>">
+                                       <p class="text-muted mb-0">No images added</p>
+                                    </div>
+                                 </div>
+                              </div>
+                           </div>
+                        </div>
+
+                        <div class="text-right mt-3">
+                           <button type="button" class="btn btn-danger btn-sm" data-action="remove-row">
+                              <span class="icon icon-trash mr-1"></span>
+                              <%= Spree.t(:remove_row, default: 'Remove row') %>
+                           </button>
+                        </div>
+                     </td>
+                  </tr>
+               <% end %>
+            </tbody>
+         </table>
+      </div>
+
+      <div data-hook="admin_product_import_form_actions">
+         <%= render partial: 'spree/admin/shared/new_resource_links' %>
+      </div>
+   </fieldset>
 <% end %>
+
+<% else %>
+  <%= render partial: 'update_products_section' %>
+<% end %>
+
+<%= render partial: 'remove_confirm_modal' %>
+<%= render partial: 'bulk_apply_modal' %>
+<%= render partial: 'variant_modal' %>
+<%= render partial: 'description_seo_modal' %>
+<%= render partial: 'images_modal' %>
+<%= render partial: 'stock_modal' %>
+<%= render partial: 'price_modal' %>
+<%= render partial: 'product_row_template' %>

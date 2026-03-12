@@ -57,7 +57,7 @@
         </th>
 
          <th scope="col">
-          <%= Spree.t(:created_at) %>
+          <%= sort_link @search, :created_at, Spree.t(:created_at), { default_order: "desc" }, {title: 'admin_product_imports_listing_created_at_title'} %>
         </th>
 
          <th scope="col">
@@ -73,13 +73,13 @@
     </thead>
     <tbody>
       <% @collection.each do |product_import| %>
-          <tr <%== "style='color: red;'" if product_import.active? %>
+          <tr <%== "class='text-primary'" if product_import.active? %>
             id="<%= spree_dom_id product_import %>" 
             data-hook="admin_products_index_rows" class="<%= cycle('odd', 'even') %>">
 
             <td class="name"><%= link_to product_import.name, spree.admin_product_import_file_url(product_import) %></td>
             <td class="user_id"><%="#{product_import.user.id}-#{product_import.user.email}"%></td>
-            <td class="file"><%= product_import.file_name %></td>
+            <td class="file"><%= product_import.file_name.presence || 'N/A' %></td>
             <td class="status">
               <span class='badge badge-<%=product_import.status %>'>
                 <%= Spree.t("product_import_file.status.#{product_import.status}") %>
@@ -91,7 +91,9 @@
             <td class="actions " data-hook="admin_products_index_row_actions">
               <span class="d-flex justify-content-end">
                 <%= link_to_delete product_import, no_text: true if can?(:delete, product_import) && !product_import.processing? %>
-                <%= button_link_to "", Rails.application.routes.url_helpers.rails_blob_path(product_import.file, disposition: "attachment", only_path: true), icon: 'download' %>
+                <% if product_import.file.attached? %>
+                  <%= button_link_to "", Rails.application.routes.url_helpers.rails_blob_path(product_import.file, disposition: "attachment", only_path: true), icon: 'download' %>
+                <% end %>
               </span>
              
             </td>
@@ -108,3 +110,12 @@
 <% end %>
 
 <%= render partial: 'spree/admin/shared/index_table_options', locals: { collection: @collection } %>
+
+<% if @collection.any?(&:processing?) %>
+  <script>
+    // Auto-refresh page every 5 seconds if there are processing imports
+    setInterval(function() {
+      location.reload();
+    }, 3000);
+  </script>
+<% end %>

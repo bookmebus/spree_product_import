@@ -1,0 +1,237 @@
+<template id="product-import-row-template">
+   <tr class="product-import-row" data-row-index="__INDEX__">
+      <td class="text-left align-middle">
+         <div class="d-flex align-items-center" style="gap: 8px;">
+            <button type="button" class="btn btn-link btn-sm p-0" data-action="toggle-row" aria-expanded="true" aria-label="Toggle row">
+               <span data-role="row-chevron" style="display: inline-block; transform: rotate(90deg);">
+                  <%= render partial: 'svg_icon', locals: { icon: 'chevron-right', size: 12 } %>
+               </span>
+            </button>
+            <span class="text-muted" data-role="row-index-label"></span>
+         </div>
+      </td>
+      <td class="text-right align-middle">
+         <input
+            type="checkbox"
+            name="product_import_files[__INDEX__][_selected]"
+            data-role="row-select"
+            style="transform: scale(1.2);"
+         />
+      </td>
+   </tr>
+   <tr class="product-import-row-details" data-row-index="__INDEX__">
+      <td colspan="2" style="background-color: rgba(0, 0, 0, 0.05);">
+         <div class="row">
+            <div class="col-12 col-md-4" data-hook="admin_product_import_form_name">
+               <div class="form-group">
+                  <label for="product_import_files___INDEX___name"><%= Spree.t(:name) %> <span class="required">*</span></label>
+                  <input
+                     type="text"
+                     name="product_import_files[__INDEX__][name]"
+                     id="product_import_files___INDEX___name"
+                     class="form-control title"
+                     data-role="row-name-input"
+                     required="required"
+                  />
+               </div>
+            </div>
+            <div class="col-12 col-md-4" data-hook="admin_product_import_form_sku">
+               <div class="form-group">
+                  <label for="product_import_files___INDEX___sku"><%= Spree.t(:sku) %></label>
+                  <input
+                     type="text"
+                     name="product_import_files[__INDEX__][sku]"
+                     id="product_import_files___INDEX___sku"
+                     class="form-control"
+                     data-role="row-sku-input"
+                  />
+               </div>
+            </div>
+            <div class="col-12 col-md-4" data-hook="admin_product_import_form_prototype">
+               <div class="form-group">
+                  <label for="product_import_files___INDEX___prototype_id"><%= Spree.t(:prototype) %></label>
+                  <select
+                     name="product_import_files[__INDEX__][prototype_id]"
+                     id="product_import_files___INDEX___prototype_id"
+                     class="select2-clear w-100"
+                     data-role="row-prototype-select">
+                     <option value=""></option>
+                     <% Spree::Prototype.all.each do |prototype| %>
+                       <option value="<%= prototype.id %>"><%= prototype.name %></option>
+                     <% end %>
+                  </select>
+               </div>
+            </div>
+         </div>
+         <div class="row">
+            <div class="col-12 col-md-4" data-hook="admin_product_import_form_price">
+               <div class="form-group">
+                  <label for="product_import_files___INDEX___master_price"><%= Spree.t(:master_price) %> <span class="required">*</span></label>
+                  <input
+                     type="text"
+                     name="product_import_files[__INDEX__][master_price]"
+                     id="product_import_files___INDEX___master_price"
+                     class="form-control"
+                     data-role="row-price-input"
+                     required="required"
+                  />
+               </div>
+            </div>
+            <div class="col-12 col-md-4" data-hook="admin_product_import_form_available_on">
+               <div class="form-group">
+                  <label for="product_import_files___INDEX___available_on"><%= Spree.t(:available_on) %></label>
+                  <div class="input-group datepicker"
+                       data-wrap="true"
+                       data-alt-format="<%= Spree.t(:fpr_human_friendly_date_format, scope: 'date_picker', default: 'M j, Y') %>">
+                     <input
+                        type="text"
+                        name="product_import_files[__INDEX__][available_on]"
+                        id="product_import_files___INDEX___available_on"
+                        class="form-control shadow-none"
+                        data-role="row-available-on-input"
+                        placeholder="<%= Spree.t(:select_a_date) %>"
+                        data-input=""
+                     />
+                     <%= render partial: 'spree/admin/shared/cal_close' %>
+                  </div>
+               </div>
+            </div>
+            <div class="col-12 col-md-4" data-hook="admin_product_import_form_shipping_categories">
+               <div class="form-group">
+                  <label for="product_import_files___INDEX___shipping_category_id"><%= Spree.t(:shipping_category) %> <span class="required">*</span></label>
+                  <select
+                     name="product_import_files[__INDEX__][shipping_category_id]"
+                     id="product_import_files___INDEX___shipping_category_id"
+                     class="select2 w-100"
+                     data-role="row-shipping-category-select"
+                     required="required">
+                     <option value=""><%= Spree.t('match_choices.none') %></option>
+                     <% (@shipping_categories || []).each do |category| %>
+                       <option value="<%= category.id %>"><%= category.name %></option>
+                     <% end %>
+                  </select>
+               </div>
+            </div>
+         </div>
+         <div class="row">
+            <div class="col-12 col-md-4" data-hook="admin_product_import_form_vendor">
+               <div class="form-group">
+                  <label for="product_import_files___INDEX___vendor_id"><%= Spree.t(:vendor, default: 'Vendor') %></label>
+                  <select
+                     name="product_import_files[__INDEX__][vendor_id]"
+                     id="product_import_files___INDEX___vendor_id"
+                     class="select2 w-100"
+                     data-role="row-vendor-select">
+                     <option value=""><%= Spree.t('match_choices.none') %></option>
+                     <% (@vendors || []).each do |vendor| %>
+                       <option value="<%= vendor.id %>"><%= vendor.name %></option>
+                     <% end %>
+                  </select>
+               </div>
+            </div>
+            <div class="col-12 col-md-8" data-hook="admin_product_import_form_taxons">
+               <div class="form-group">
+                  <label for="product_import_files___INDEX___taxon_ids"><%= Spree.t(:taxons) %></label>
+                  <select
+                     name="product_import_files[__INDEX__][taxon_ids][]"
+                     id="product_import_files___INDEX___taxon_ids"
+                     class="select2 w-100"
+                     multiple
+                     data-role="row-taxons-select">
+                     <% (@taxons || []).each do |taxon| %>
+                       <option value="<%= taxon.id %>"><%= taxon.pretty_name %></option>
+                     <% end %>
+                  </select>
+               </div>
+            </div>
+         </div>
+
+         <!-- Description and SEO Section -->
+         <div class="row mt-3" data-hook="admin_product_import_form_description_seo">
+            <div class="col-12">
+               <div class="card">
+                  <div class="card-header d-flex justify-content-between align-items-center" style="cursor: pointer;" data-action="toggle-description-seo-section" data-row-index="__INDEX__">
+                     <div class="d-flex align-items-center" style="gap: 8px;">
+                        <span data-role="description-seo-chevron" style="display: inline-block; transform: rotate(0deg); transition: transform 0.2s;">
+                           <%= render partial: 'svg_icon', locals: { icon: 'chevron-right', size: 12 } %>
+                        </span>
+                        <h6 class="mb-0"><%= Spree.t(:description_and_seo, default: 'Description & SEO') %></h6>
+                     </div>
+                     <button type="button" class="btn btn-sm btn-primary" data-action="open-description-seo-modal" data-row-index="__INDEX__">
+                        <%= Spree.t(:manage, default: 'Manage') %>
+                     </button>
+                  </div>
+                  <div class="card-body" data-role="description-seo-content" data-row-index="__INDEX__" style="display: none;">
+                     <div data-role="description-seo-summary" data-row-index="__INDEX__">
+                        <p class="text-muted mb-0"><%= Spree.t(:no_description_seo_configured, default: 'No description or SEO information configured') %></p>
+                     </div>
+                     <!-- Hidden inputs for storing data -->
+                     <input type="hidden" name="product_import_files[__INDEX__][detail]" data-role="row-detail-input" />
+                     <input type="hidden" name="product_import_files[__INDEX__][meta_title]" data-role="row-meta-title-input" />
+                     <input type="hidden" name="product_import_files[__INDEX__][meta_keywords]" data-role="row-meta-keywords-input" />
+                     <input type="hidden" name="product_import_files[__INDEX__][meta_description]" data-role="row-meta-description-input" />
+                  </div>
+               </div>
+            </div>
+         </div>
+
+         <!-- Variants Section -->
+         <div class="row mt-3" data-hook="admin_product_import_form_variants">
+            <div class="col-12">
+               <div class="card">
+                  <div class="card-header d-flex justify-content-between align-items-center" style="cursor: pointer;" data-action="toggle-variants-section" data-row-index="__INDEX__">
+                     <div class="d-flex align-items-center" style="gap: 8px;">
+                        <span data-role="variants-chevron" style="display: inline-block; transform: rotate(0deg); transition: transform 0.2s;">
+                           <%= render partial: 'svg_icon', locals: { icon: 'chevron-right', size: 12 } %>
+                        </span>
+                        <h6 class="mb-0"><%= Spree.t(:product_variants, default: 'Product Variants') %></h6>
+                     </div>
+                     <button type="button" class="btn btn-sm btn-primary" data-action="open-variant-modal" data-row-index="__INDEX__">
+                        <%= Spree.t(:manage_variants, default: 'Manage Variants') %>
+                     </button>
+                  </div>
+                  <div class="card-body" data-role="variants-content" data-row-index="__INDEX__" style="display: none;">
+                     <div data-role="variants-summary" data-row-index="__INDEX__">
+                        <p class="text-muted mb-0"><%= Spree.t(:no_variants_configured, default: 'No variants configured') %></p>
+                     </div>
+                     <!-- Hidden container for storing variant data -->
+                     <div data-role="variants-data" data-row-index="__INDEX__" style="display: none;"></div>
+                  </div>
+               </div>
+            </div>
+         </div>
+
+         <!-- Images Section -->
+         <div class="row mt-3" data-hook="admin_product_import_form_images">
+            <div class="col-12">
+               <div class="card">
+                  <div class="card-header d-flex justify-content-between align-items-center" style="cursor: pointer;" data-action="toggle-images-section" data-row-index="__INDEX__">
+                     <div class="d-flex align-items-center" style="gap: 8px;">
+                        <span data-role="images-chevron" style="display: inline-block; transform: rotate(0deg); transition: transform 0.2s;">
+                           <%= render partial: 'svg_icon', locals: { icon: 'chevron-right', size: 12 } %>
+                        </span>
+                        <h6 class="mb-0"><%= Spree.t(:images, default: 'Images') %></h6>
+                        <span class="badge badge-success" data-role="images-count-badge" data-row-index="__INDEX__" style="display: none;"></span>
+                     </div>
+                     <button type="button" class="btn btn-sm btn-primary" data-action="open-images-modal" data-row-index="__INDEX__">
+                        <%= Spree.t(:manage_images, default: 'Manage Images') %>
+                     </button>
+                  </div>
+                  <div class="card-body" data-role="images-content" data-row-index="__INDEX__" style="display: none;">
+                     <div data-role="images-summary" data-row-index="__INDEX__">
+                        <p class="text-muted mb-0">No images added</p>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+
+         <div class="text-right mt-3">
+            <button type="button" class="btn btn-danger btn-sm" data-action="remove-row">
+               <span class="icon icon-trash mr-1"></span>
+               <%= Spree.t(:remove_row, default: 'Remove row') %>
+            </button>
+         </div>
+      </td>
+   </tr>
+</template>
