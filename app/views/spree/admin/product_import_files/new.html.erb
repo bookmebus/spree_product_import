@@ -1,7 +1,13 @@
 <% content_for :head do %>
-  <link rel="stylesheet" href="https://unpkg.com/trix@2.0.0/dist/trix.css">
-  <script src="https://unpkg.com/trix@2.0.0/dist/trix.umd.min.js"></script>
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/trix@2.0.0/dist/trix.css"
+        integrity="sha384-+1dZHlvx2wyyo6KNmXBWlF3STI8aycOUCSHN5ulxxD7ViqFlai2kLcm1xA0a6rV1"
+        crossorigin="anonymous">
+  <script src="https://unpkg.com/trix@2.0.0/dist/trix.umd.min.js"
+          integrity="sha384-Hagq88Y5pokdGf16VdXExKzrn3x6T/cK30TUaFeiyZpDIboKYm5tU1lsuho2fix/"
+          crossorigin="anonymous"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"
+          integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT"
+          crossorigin="anonymous"></script>
   <%= javascript_include_tag 'spree/backend/spree_product_import' %>
   <script>
     // Prevent file attachments in Trix

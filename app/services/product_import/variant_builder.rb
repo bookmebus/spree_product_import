@@ -22,8 +22,9 @@ module ProductImport
         return @errors
       end
 
-      prepare_option_types(variants_data)
-      create_variant_records(variants_data)
+      option_values_by_id = preload_option_values(variants_data)
+      prepare_option_types(variants_data, option_values_by_id)
+      create_variant_records(variants_data, option_values_by_id)
 
       @errors
     end
@@ -71,16 +72,15 @@ module ProductImport
 
     # Prepares the product by adding any missing option types
     # Collects option types from all variant data, then adds them to product
-    def prepare_option_types(variants_data)
-      option_types_to_add = collect_option_types(variants_data)
+    def prepare_option_types(variants_data, option_values_by_id)
+      option_types_to_add = collect_option_types(variants_data, option_values_by_id)
       add_option_types_to_product(option_types_to_add)
     end
 
     # Collects all unique option types needed from variants_data
     # Only includes option types not already on the product
     # Returns: Array of OptionType objects
-    def collect_option_types(variants_data)
-      option_values_by_id = preload_option_values(variants_data)
+    def collect_option_types(variants_data, option_values_by_id)
       option_types = Set.new
 
       variants_data.each do |variant_data|
@@ -119,10 +119,8 @@ module ProductImport
     end
 
     # Creates variant records from variants_data
-    # Preloads option values once, then creates each variant
-    def create_variant_records(variants_data)
-      option_values_by_id = preload_option_values(variants_data)
-
+    # Uses preloaded option values passed in from create_variants
+    def create_variant_records(variants_data, option_values_by_id)
       variants_data.each_with_index do |variant_data, index|
         next unless valid_variant_data?(variant_data)
 

@@ -7,8 +7,8 @@
 window.Spree = window.Spree || {};
 window.Spree.ProductImport = window.Spree.ProductImport || {};
 
-Spree.ProductImportTable = (function() {
-  'use strict';
+Spree.ProductImportTable = (function () {
+  "use strict";
 
   // ========== Initialization ==========
 
@@ -19,9 +19,8 @@ Spree.ProductImportTable = (function() {
   }
 
   function init(optionTypes) {
-    var table = document.getElementById('product-import-table');
+    var table = document.getElementById("product-import-table");
     if (!table) {
-      console.warn('Product import table not found');
       return;
     }
 
@@ -37,20 +36,19 @@ Spree.ProductImportTable = (function() {
     var FileImporter = Spree.ProductImport.FileImporter;
 
     // Check if all modules are loaded
-    if (!DOM || !UI || !RowOps || !Variants || !DescSeo || !Widgets || !Events) {
-      console.error('Product Import modules not loaded properly', {
-        DOM: !!DOM,
-        UI: !!UI,
-        RowOps: !!RowOps,
-        Variants: !!Variants,
-        DescSeo: !!DescSeo,
-        Widgets: !!Widgets,
-        Events: !!Events
-      });
+    if (
+      !DOM ||
+      !UI ||
+      !RowOps ||
+      !Variants ||
+      !DescSeo ||
+      !Widgets ||
+      !Events
+    ) {
       return;
     }
 
-    var nextIndex = parseInt(table.getAttribute('data-next-index'), 10) || 0;
+    var nextIndex = parseInt(table.getAttribute("data-next-index"), 10) || 0;
 
     // Initialize all modules
     DOM.setTable(table);
@@ -78,7 +76,8 @@ Spree.ProductImportTable = (function() {
 
     // Restore state from server-rendered data (after validation errors)
     if (Variants) Variants.initializeExistingRows();
-    if (DescSeo && DescSeo.initializeExistingRows) DescSeo.initializeExistingRows();
+    if (DescSeo && DescSeo.initializeExistingRows)
+      DescSeo.initializeExistingRows();
 
     // Attach event listeners
     Events.attachEventListeners();
@@ -87,7 +86,7 @@ Spree.ProductImportTable = (function() {
     // Hook form submit to inject image file inputs
     var form = document.querySelector('form[action*="product_import_files"]');
     if (form && ImgMgr) {
-      form.addEventListener('submit', function() {
+      form.addEventListener("submit", function () {
         ImgMgr.prepareFormSubmission(form);
       });
     }
@@ -95,25 +94,23 @@ Spree.ProductImportTable = (function() {
     // Update initial UI state
     UI.updateSelectAllState();
     UI.updateTotalCount();
-    UI.updateToggleAllButton('expanded');
-
-    console.log('Product Import Table initialized successfully');
+    UI.updateToggleAllButton("expanded");
   }
 
   // ========== Public API ==========
 
   return {
     init: init,
-    setOptionTypesData: setOptionTypesData
+    setOptionTypesData: setOptionTypesData,
   };
 })();
 
 // Auto-initialize on page load
-(function() {
+(function () {
   function initializeProductImportTable() {
     Spree.ProductImportTable.init();
   }
 
-  document.addEventListener('DOMContentLoaded', initializeProductImportTable);
-  document.addEventListener('turbolinks:load', initializeProductImportTable);
+  document.addEventListener("DOMContentLoaded", initializeProductImportTable);
+  document.addEventListener("turbolinks:load", initializeProductImportTable);
 })();

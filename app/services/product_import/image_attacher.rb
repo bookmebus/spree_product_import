@@ -1,3 +1,7 @@
+require 'open-uri'
+require 'ipaddr'
+require 'socket'
+
 module ProductImport
   # Service object for attaching images to products and variants
   # Handles both URL-based and file upload images
@@ -105,7 +109,32 @@ module ProductImport
     # Handles HTTP errors and network issues
     def attach_from_url(viewable, url, alt_text, index)
       begin
-        io = URI.open(url)
+        uri = URI.parse(url)
+
+        unless uri.is_a?(URI::HTTP) || uri.is_a?(URI::HTTPS)
+          @errors << "Image #{index + 1}: URL must use http or https scheme"
+          return
+        end
+
+        unless uri.host.present?
+          @errors << "Image #{index + 1}: URL is missing a host"
+          return
+        end
+
+        # Block private/loopback addresses to prevent SSRF
+        begin
+          resolved = IPSocket.getaddress(uri.host)
+          addr = IPAddr.new(resolved)
+          if addr.loopback? || addr.private? || addr.link_local?
+            @errors << "Image #{index + 1}: URL resolves to a private or reserved address"
+            return
+          end
+        rescue SocketError
+          @errors << "Image #{index + 1}: Could not resolve host '#{uri.host}'"
+          return
+        end
+
+        io = uri.open
         filename = extract_filename_from_url(url)
         
         image = Spree::Image.new(viewable: viewable, alt: alt_text)

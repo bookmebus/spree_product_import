@@ -70,15 +70,19 @@ module ProductImport
     # Assigns basic attributes first, then processes complex associations
     # Tracks success/error counts for reporting
     def update_product(product, product_data)
-      assign_basic_attributes(product, product_data)
-
-      if product.save
+      ActiveRecord::Base.transaction do
+        assign_basic_attributes(product, product_data)
+        product.save!
         process_product_updates(product, product_data)
-        @update_count += 1
-      else
-        @error_count += 1
-        @errors[product.id] = product.errors.full_messages
       end
+
+      @update_count += 1
+    rescue ActiveRecord::RecordInvalid => e
+      @error_count += 1
+      @errors[product.id] = e.record.errors.full_messages
+    rescue ActiveRecord::RecordNotSaved, StandardError => e
+      @error_count += 1
+      @errors[product.id] = [e.message]
     end
 
     # Assigns basic scalar attributes to product

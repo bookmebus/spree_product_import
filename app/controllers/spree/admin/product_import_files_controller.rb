@@ -69,7 +69,28 @@ module Spree
       def bulk_update_params
         return {} unless params[:product_updates].present?
 
-        params.require(:product_updates).permit!
+        permitted = {}
+        params[:product_updates].each do |product_id, product_data|
+          next unless product_data.is_a?(ActionController::Parameters)
+
+          permitted[product_id] = product_data.permit(
+            :_selected, :name, :sku, :available_on, :shipping_category_id,
+            :master_price, :vendor_id, :detail,
+            :meta_title, :meta_keywords, :meta_description,
+            taxon_ids: [],
+            variants: [
+              :sku, :price, :compare_at_price, :cost_price,
+              :weight, :height, :width, :depth
+            ],
+            new_variants: [
+              :sku, :price, :compare_at_price, :cost_price,
+              :weight, :height, :width, :depth,
+              { option_values: {} }
+            ],
+            images: [:url, :alt]
+          ).to_h.deep_symbolize_keys
+        end
+        permitted
       end
 
       # Processes and permits parameters for multiple product import rows

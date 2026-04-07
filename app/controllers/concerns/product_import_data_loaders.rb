@@ -39,7 +39,7 @@ module ProductImportDataLoaders
 
   # Loads all shipping categories for product import dropdowns
   def load_shipping_categories
-    @shipping_categories = Spree::ShippingCategory.all
+    @shipping_categories = Spree::ShippingCategory.order(:name)
   end
 
   # Loads stock locations for inventory management
@@ -49,9 +49,9 @@ module ProductImportDataLoaders
     # In update mode, filter stock locations by the selected vendor
     if params[:mode] == 'update' && params[:update_vendor_id].present?
       vendor_id = params[:update_vendor_id]
-      @stock_locations = Spree::StockLocation.where(vendor_id: vendor_id)
+      @stock_locations = Spree::StockLocation.where(vendor_id: vendor_id).order(:name)
     else
-      @stock_locations = Spree::StockLocation.all
+      @stock_locations = Spree::StockLocation.active.order(:name)
     end
   end
 
