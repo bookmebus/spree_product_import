@@ -202,7 +202,7 @@
                <%= render partial: 'svg_icon', locals: { icon: 'truck', size: 14, css_class: 'mr-1' } %>
                Set Shipping Category
             </button>
-            <% if defined?(Spree::Vendor) && @vendors.present? %>
+            <% if defined?(Spree::Vendor) %>
                <button type="button" class="btn btn-outline-secondary btn-sm"
                        data-action="open-bulk-apply" data-field="vendor">
                   <%= render partial: 'svg_icon', locals: { icon: 'home', size: 14, css_class: 'mr-1' } %>
@@ -226,6 +226,9 @@
                   all_preselected_taxon_ids = rows.flat_map { |r| (r[:taxon_ids] || r['taxon_ids'] || []).map(&:to_s) }.uniq
                   preselected_taxons_by_id = all_preselected_taxon_ids.any? ?
                     Spree::Taxon.where(id: all_preselected_taxon_ids).index_by { |t| t.id.to_s } : {}
+                  all_preselected_vendor_ids = rows.map { |r| (r[:vendor_id] || r['vendor_id']).presence }.compact.uniq
+                  preselected_vendors_by_id = (defined?(Spree::Vendor) && all_preselected_vendor_ids.any?) ?
+                    Spree::Vendor.where(id: all_preselected_vendor_ids).index_by { |v| v.id.to_s } : {}
                %>
                <% rows.each_with_index do |row, index| %>
                   <% row_name = row[:name] || row['name'] %>
@@ -331,11 +334,12 @@
                            <div class="col-12 col-md-4" data-hook="admin_product_import_form_vendor">
                               <div class="form-group">
                                  <label for="product_import_files_<%= index %>_vendor_id"><%= Spree.t(:vendor, default: 'Vendor') %></label>
-                                 <%= select_tag "product_import_files[#{index}][vendor_id]",
-                                    options_for_select([[Spree.t('match_choices.none'), '']] + (@vendors || []).map { |vendor| [vendor.name, vendor.id] }, row_vendor_id),
-                                    class: 'select2 w-100',
-                                    id: "product_import_files_#{index}_vendor_id",
-                                    data: { role: 'row-vendor-select' } %>
+                                 <% preselected_vendor = preselected_vendors_by_id[row_vendor_id.to_s] %>
+                                 <select name="product_import_files[<%= index %>][vendor_id]" id="product_import_files_<%= index %>_vendor_id" class="w-100" data-role="row-vendor-select" data-preselected="<%= preselected_vendor ? { id: preselected_vendor.id.to_s, text: preselected_vendor.name }.to_json : 'null' %>">
+                                    <% if preselected_vendor %>
+                                       <option value="<%= preselected_vendor.id %>" selected><%= preselected_vendor.name %></option>
+                                    <% end %>
+                                 </select>
                               </div>
                            </div>
                            <div class="col-12 col-md-8" data-hook="admin_product_import_form_taxons">

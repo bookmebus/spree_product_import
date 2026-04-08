@@ -54,6 +54,20 @@ module Spree
         )
       end
 
+      # GET /admin/product_import_files/vendors.json
+      # Lightweight search endpoint for vendor AJAX Select2 (avoids broken /api/v1/vendors ransack)
+      def vendors
+        return render(json: []) unless defined?(Spree::Vendor)
+
+        scope = Spree::Vendor.accessible_by(current_ability, :index).order(:name)
+        if (term = params.dig(:q, :name_cont).presence)
+          translation_table = Spree::Vendor.respond_to?(:translation_class) ?
+            Spree::Vendor.translation_class.table_name : 'spree_vendor_translations'
+          scope = scope.where("#{translation_table}.name ILIKE ?", "%#{term}%")
+        end
+        render json: scope.limit(50).map { |v| { id: v.id, name: v.name } }
+      end
+
       private
 
       # ========== Parameter Handling ==========

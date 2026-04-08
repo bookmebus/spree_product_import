@@ -125,6 +125,35 @@ Spree.ProductImport.EventHandlers = (function() {
           });
         }
       }
+    } else if (field === 'vendor') {
+      var vendorBulkSel = document.getElementById('bulk-value-vendor');
+      if (vendorBulkSel && window.jQuery && jQuery.fn.select2) {
+        if (!jQuery(vendorBulkSel).data('select2')) {
+          jQuery(vendorBulkSel).select2({
+            width: '100%',
+            placeholder: 'Search vendors\u2026',
+            allowClear: true,
+            minimumInputLength: 1,
+            dropdownParent: jQuery('#bulk-apply-modal'),
+            ajax: {
+              url: '/admin/product_import_files/vendors',
+              dataType: 'json',
+              delay: 250,
+              data: function(params) {
+                return { q: { name_cont: params.term } };
+              },
+              processResults: function(data) {
+                return {
+                  results: (Array.isArray(data) ? data : (data.vendors || [])).map(function(v) {
+                    return { id: v.id, text: v.name };
+                  })
+                };
+              },
+              cache: true
+            }
+          });
+        }
+      }
     } else if (window.jQuery) {
       var fieldSection = document.getElementById('bulk-field-' + field);
       if (fieldSection) {
@@ -186,11 +215,26 @@ Spree.ProductImport.EventHandlers = (function() {
           if (window.jQuery) jQuery(scSelect).trigger('change');
         }
       } else if (currentBulkField === 'vendor') {
-        var vendorSelect = detailsRow.querySelector('[data-role="row-vendor-select"]');
-        var vendorValue = document.getElementById('bulk-value-vendor');
-        if (vendorSelect && vendorValue) {
-          vendorSelect.value = vendorValue.value;
-          if (window.jQuery) jQuery(vendorSelect).trigger('change');
+        var vendorBulkModal = document.getElementById('bulk-value-vendor');
+        var vendorRowSel = detailsRow.querySelector('[data-role="row-vendor-select"]');
+        if (vendorBulkModal && vendorRowSel) {
+          var selectedVendorOpts = Array.from(vendorBulkModal.selectedOptions);
+          if (selectedVendorOpts.length > 0 && selectedVendorOpts[0].value) {
+            var vOpt = selectedVendorOpts[0];
+            if (!vendorRowSel.querySelector('option[value="' + vOpt.value + '"]')) {
+              var newVOpt = new Option(vOpt.text, vOpt.value, true, true);
+              vendorRowSel.appendChild(newVOpt);
+            } else {
+              vendorRowSel.querySelector('option[value="' + vOpt.value + '"]').selected = true;
+            }
+            if (window.jQuery) jQuery(vendorRowSel).trigger('change');
+          } else {
+            if (window.jQuery) {
+              jQuery(vendorRowSel).val('').trigger('change');
+            } else {
+              vendorRowSel.value = '';
+            }
+          }
         }
       } else if (currentBulkField === 'taxons') {
         var taxonMulti = document.getElementById('bulk-value-taxons');

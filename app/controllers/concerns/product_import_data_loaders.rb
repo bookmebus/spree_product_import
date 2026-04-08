@@ -5,8 +5,7 @@ module ProductImportDataLoaders
 
   included do
     # before_action :load_products, only: :index
-    # before_action :load_vendors, only: %i[index new create bulk_update]
-    # before_action :load_shipping_categories, only: %i[new create bulk_update]
+    before_action :load_shipping_categories, only: %i[new create bulk_update]
     # before_action :load_stock_locations, only: %i[new bulk_update]
     # before_action :load_option_types, only: %i[new create]
   end
@@ -21,19 +20,6 @@ module ProductImportDataLoaders
       .order(created_at: :desc)
       .page(params[:products_page])
       .per(products_per_page)
-  end
-
-  # Loads vendors for product import dropdowns
-  # Only loads if Spree::Vendor is defined (multi-vendor extension)
-  # Uses current_ability to scope accessible vendors
-  def load_vendors
-    return unless defined?(Spree::Vendor)
-
-    @vendors = Spree::Vendor
-      .accessible_by(current_ability, :index)
-      .order(:name)
-      .page(params[:vendors_page])
-      .per(vendors_per_page)
   end
 
   # Loads all shipping categories for product import dropdowns

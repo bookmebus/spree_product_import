@@ -54,10 +54,6 @@
             <div class="form-group mb-0">
                <label class="font-weight-semibold"><%= Spree.t(:vendor, default: 'Vendor') %></label>
                <select id="bulk-value-vendor" class="w-100">
-                  <option value="">— <%= Spree.t('match_choices.none') %> —</option>
-                  <% (@vendors || []).each do |vendor| %>
-                     <option value="<%= vendor.id %>"><%= vendor.name %></option>
-                  <% end %>
                </select>
             </div>
          </div>

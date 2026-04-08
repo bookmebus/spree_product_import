@@ -4,6 +4,7 @@ Spree::Core::Engine.add_routes do
     resources :product_import_files do
       collection do
         patch :bulk_update
+        get :vendors, defaults: { format: :json }
       end
     end
   end

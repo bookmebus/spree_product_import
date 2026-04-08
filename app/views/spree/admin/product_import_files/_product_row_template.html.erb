@@ -120,12 +120,9 @@
                   <select
                      name="product_import_files[__INDEX__][vendor_id]"
                      id="product_import_files___INDEX___vendor_id"
-                     class="select2 w-100"
-                     data-role="row-vendor-select">
-                     <option value=""><%= Spree.t('match_choices.none') %></option>
-                     <% (@vendors || []).each do |vendor| %>
-                       <option value="<%= vendor.id %>"><%= vendor.name %></option>
-                     <% end %>
+                     class="w-100"
+                     data-role="row-vendor-select"
+                     data-preselected="">
                   </select>
                </div>
             </div>

@@ -158,12 +158,54 @@ Spree.ProductImport.UpdateProductsManager = (function () {
     } else if (field === 'vendor') {
       var sel = document.getElementById('update-bulk-vendor-value'); // jshint ignore:line
       if (sel && typeof jQuery !== 'undefined' && jQuery.fn.select2 && !jQuery(sel).data('select2')) {
-        jQuery(sel).select2({ dropdownParent: jQuery('#update-bulk-modal'), width: '100%', allowClear: true, placeholder: '— None —' });
+        jQuery(sel).select2({
+          dropdownParent: jQuery('#update-bulk-modal'),
+          width: '100%',
+          allowClear: true,
+          placeholder: '\u2014 None \u2014',
+          minimumInputLength: 1,
+          ajax: {
+            url: '/admin/product_import_files/vendors',
+            dataType: 'json',
+            delay: 250,
+            data: function(params) { return { q: { name_cont: params.term } }; },
+            processResults: function(data) {
+              return {
+                results: (Array.isArray(data) ? data : (data.vendors || [])).map(function(v) {
+                  return { id: v.id, text: v.name };
+                })
+              };
+            },
+            cache: true
+          }
+        });
       }
     } else if (field === 'taxons') {
       var sel = document.getElementById('update-bulk-taxons-value'); // jshint ignore:line
       if (sel && typeof jQuery !== 'undefined' && jQuery.fn.select2 && !jQuery(sel).data('select2')) {
-        jQuery(sel).select2({ dropdownParent: jQuery('#update-bulk-modal'), width: '100%', placeholder: 'Select taxons...' });
+        var taxonToken = (window.Spree && window.Spree.api_key) || '';
+        jQuery(sel).select2({
+          dropdownParent: jQuery('#update-bulk-modal'),
+          width: '100%',
+          placeholder: 'Search taxons\u2026',
+          minimumInputLength: 1,
+          ajax: {
+            url: '/api/v1/taxons',
+            dataType: 'json',
+            delay: 300,
+            data: function(params) {
+              return { per_page: 50, without_children: true, q: { name_cont: params.term }, token: taxonToken };
+            },
+            processResults: function(data) {
+              return {
+                results: (data.taxons || []).map(function(t) {
+                  return { id: t.id, text: t.pretty_name };
+                })
+              };
+            },
+            cache: true
+          }
+        });
       }
     }
   }
@@ -182,9 +224,10 @@ Spree.ProductImport.UpdateProductsManager = (function () {
     var scopeLabel   = document.getElementById('update-bulk-scope-label');
     if (scopeLabel) {
       var checkedCount = document.querySelectorAll('.update-row-checkbox:checked').length;
+      var totalCount   = allUpdateCards().length;
       scopeLabel.textContent = checkedCount > 0
         ? 'Applying to ' + checkedCount + ' selected product' + (checkedCount !== 1 ? 's' : '') + '.'
-        : 'No products selected – nothing will be changed.';
+        : 'Applying to all ' + totalCount + ' product' + (totalCount !== 1 ? 's' : '') + ' (none selected).';
     }
 
     // Lazy-init widgets
@@ -198,10 +241,13 @@ Spree.ProductImport.UpdateProductsManager = (function () {
   }
 
   function applyBulkChanges() {
-    var selected = allUpdateCards().filter(function (c) {
+    var all      = allUpdateCards();
+    var checked  = all.filter(function (c) {
       var cb = c.querySelector('.update-row-checkbox');
       return cb && cb.checked;
     });
+    // Mirror create-mode behaviour: apply to every card when nothing is explicitly selected.
+    var selected = checked.length > 0 ? checked : all;
 
     selected.forEach(function (card) {
       var pId  = card.getAttribute('data-product-id');
@@ -233,18 +279,39 @@ Spree.ProductImport.UpdateProductsManager = (function () {
         var vs = document.getElementById('update-bulk-vendor-value');
         var vt = body.querySelector('[data-role="row-vendor-select"]');
         if (vs && vt) {
-          if (typeof jQuery !== 'undefined' && jQuery.fn.select2 && jQuery(vt).data('select2')) {
-            jQuery(vt).val(vs.value).trigger('change');
+          var selectedVOpts = Array.from(vs.selectedOptions);
+          if (selectedVOpts.length > 0 && selectedVOpts[0].value) {
+            var vo = selectedVOpts[0];
+            if (!vt.querySelector('option[value="' + vo.value + '"]')) {
+              var newVO = new Option(vo.text, vo.value, true, true);
+              vt.appendChild(newVO);
+            } else {
+              vt.querySelector('option[value="' + vo.value + '"]').selected = true;
+            }
+            if (typeof jQuery !== 'undefined' && jQuery.fn.select2) jQuery(vt).trigger('change');
           } else {
-            vt.value = vs.value;
+            if (typeof jQuery !== 'undefined' && jQuery.fn.select2) {
+              jQuery(vt).val('').trigger('change');
+            } else {
+              vt.value = '';
+            }
           }
         }
       } else if (currentBulkField === 'taxons') {
         var ts = document.getElementById('update-bulk-taxons-value');
         var tt = body.querySelector('[data-role="update-taxons-input"]');
         if (ts && tt && typeof jQuery !== 'undefined' && jQuery.fn.select2) {
-          var vals = Array.from(ts.selectedOptions).map(function (o) { return o.value; });
-          jQuery(tt).val(vals).trigger('change');
+          var selectedTOpts = Array.from(ts.selectedOptions);
+          // Use find('option').remove() instead of .empty() — .empty() strips jQuery data
+          // from child elements which can corrupt Select2's internal option cache.
+          jQuery(tt).find('option').remove();
+          selectedTOpts.forEach(function(o) {
+            jQuery(tt).append(new Option(o.text, o.value, true, true));
+          });
+          // Explicitly set .val() before triggering change — AJAX-backed Select2 requires
+          // this to reconcile its internal selection state with the new DOM options.
+          var newTVals = selectedTOpts.map(function(o) { return String(o.value); });
+          jQuery(tt).val(newTVals.length ? newTVals : null).trigger('change');
         }
       }
     });
@@ -352,12 +419,88 @@ Spree.ProductImport.UpdateProductsManager = (function () {
             dropdownParent: jQuery(document.body)
           });
         });
+
+        // Initialize AJAX Select2 for per-product taxon selects
+        jQuery(updateForm).find('[data-role="update-taxons-input"]').each(function () {
+          if (!jQuery(this).data('select2')) {
+            var taxonBootToken = (window.Spree && window.Spree.api_key) || '';
+            jQuery(this).select2({
+              theme: 'bootstrap4',
+              placeholder: 'Search taxons\u2026',
+              minimumInputLength: 1,
+              closeOnSelect: false,
+              dropdownParent: jQuery(document.body),
+              ajax: {
+                url: '/api/v1/taxons',
+                dataType: 'json',
+                delay: 300,
+                data: function(params) {
+                  return { per_page: 50, without_children: true, q: { name_cont: params.term }, token: taxonBootToken };
+                },
+                processResults: function(data) {
+                  return {
+                    results: (data.taxons || []).map(function(t) {
+                      return { id: t.id, text: t.pretty_name };
+                    })
+                  };
+                },
+                cache: true
+              }
+            });
+          }
+        });
+
+        // Initialize AJAX Select2 for per-product vendor selects
+        jQuery(updateForm).find('[data-role="row-vendor-select"]').each(function () {
+          if (!jQuery(this).data('select2')) {
+            jQuery(this).select2({
+              theme: 'bootstrap4',
+              placeholder: '\u2014 None \u2014',
+              allowClear: true,
+              minimumInputLength: 1,
+              dropdownParent: jQuery(document.body),
+              ajax: {
+                url: '/admin/product_import_files/vendors',
+                dataType: 'json',
+                delay: 250,
+                data: function(params) { return { q: { name_cont: params.term } }; },
+                processResults: function(data) {
+                  return {
+                    results: (Array.isArray(data) ? data : (data.vendors || [])).map(function(v) {
+                      return { id: v.id, text: v.name };
+                    })
+                  };
+                },
+                cache: true
+              }
+            });
+          }
+        });
       }
 
-      // Initialize Select2 for vendor filter dropdown (Tab 1)
+      // Initialize AJAX Select2 for vendor filter dropdown (Tab 1)
       var vFilter = document.getElementById('update-vendor-select');
-      if (vFilter && typeof jQuery !== 'undefined' && jQuery.fn.select2) {
-        jQuery(vFilter).select2({ theme: 'bootstrap4' });
+      if (vFilter && typeof jQuery !== 'undefined' && jQuery.fn.select2 && !jQuery(vFilter).data('select2')) {
+        jQuery(vFilter).select2({
+          theme: 'bootstrap4',
+          placeholder: '\u2014 Select a vendor \u2014',
+          allowClear: true,
+          minimumInputLength: 1,
+          ajax: {
+            url: '/admin/product_import_files/vendors',
+            dataType: 'json',
+            delay: 250,
+            data: function(params) { return { q: { name_cont: params.term } }; },
+            processResults: function(data) {
+              return {
+                results: (Array.isArray(data) ? data : (data.vendors || [])).map(function(v) {
+                  return { id: v.id, text: v.name };
+                })
+              };
+            },
+            cache: true
+          }
+        });
       }
 
       // Handle clear button for search form (Tab 2)

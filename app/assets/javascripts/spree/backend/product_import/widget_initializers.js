@@ -31,6 +31,11 @@ Spree.ProductImport.WidgetInitializers = (function() {
       initTaxonsAjaxSelect2(this);
     });
 
+    // Initialize AJAX-powered Select2 for vendor selects
+    jQuery(row).find('[data-role="row-vendor-select"]').each(function() {
+      initVendorAjaxSelect2(this);
+    });
+
     // Initialize Select2 for regular selects (excluding taxon selects already handled above)
     jQuery(row).find('select.select2').each(function() {
       jQuery(this).select2({ 
@@ -76,6 +81,37 @@ Spree.ProductImport.WidgetInitializers = (function() {
           return {
             results: (data.taxons || []).map(function(t) {
               return { id: t.id, text: t.pretty_name };
+            })
+          };
+        },
+        cache: true
+      }
+    });
+  }
+
+  // Initializes a vendor <select> with Select2 AJAX search against the gem's own admin
+  // endpoint (/admin/product_import_files/vendors) to avoid the broken /api/v1/vendors
+  // ransack behaviour in spree_multi_vendor.
+  function initVendorAjaxSelect2(selectEl) {
+    if (!window.jQuery || !jQuery.fn.select2) return;
+    if (jQuery(selectEl).data('select2')) return; // already initialised
+
+    jQuery(selectEl).select2({
+      width: '100%',
+      placeholder: 'Search vendors\u2026',
+      allowClear: true,
+      minimumInputLength: 1,
+      ajax: {
+        url: '/admin/product_import_files/vendors',
+        dataType: 'json',
+        delay: 250,
+        data: function(params) {
+          return { q: { name_cont: params.term } };
+        },
+        processResults: function(data) {
+          return {
+            results: (Array.isArray(data) ? data : (data.vendors || [])).map(function(v) {
+              return { id: v.id, text: v.name };
             })
           };
         },
@@ -130,6 +166,7 @@ Spree.ProductImport.WidgetInitializers = (function() {
     init: init,
     initRowWidgets: initRowWidgets,
     initExistingRows: initExistingRows,
-    initTaxonsAjaxSelect2: initTaxonsAjaxSelect2
+    initTaxonsAjaxSelect2: initTaxonsAjaxSelect2,
+    initVendorAjaxSelect2: initVendorAjaxSelect2
   };
 })();

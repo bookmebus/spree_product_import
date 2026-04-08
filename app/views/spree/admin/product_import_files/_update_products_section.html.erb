@@ -76,12 +76,6 @@
         <div class="form-group mb-0">
           <label class="font-weight-semibold"><%= Spree.t(:vendor, default: 'Vendor') %></label>
           <select id="update-bulk-vendor-value" class="w-100">
-            <option value="">— <%= Spree.t('match_choices.none') %> —</option>
-            <% if defined?(Spree::Vendor) %>
-              <% (@vendors || []).each do |v| %>
-                <option value="<%= v.id %>"><%= v.name %></option>
-              <% end %>
-            <% end %>
           </select>
         </div>
       </div>
@@ -89,11 +83,7 @@
       <div id="update-bulk-field-taxons" class="update-bulk-field-section" style="display:none;">
         <div class="form-group mb-0">
           <label class="font-weight-semibold"><%= Spree.t(:taxons) %></label>
-          <select id="update-bulk-taxons-value" class="w-100" multiple>
-            <% (@taxons || []).each do |taxon| %>
-              <option value="<%= taxon.id %>"><%= taxon.pretty_name %></option>
-            <% end %>
-          </select>
+          <select id="update-bulk-taxons-value" class="w-100" multiple></select>
         </div>
       </div>
     </div>
@@ -153,15 +143,15 @@
           <%= form_tag spree.new_admin_product_import_file_path, method: :get, class: 'd-flex align-items-end flex-wrap', style: 'gap: 12px;' do %>
             <input type="hidden" name="mode" value="update">
 
-            <% if defined?(Spree::Vendor) && @vendors.present? %>
+            <% if defined?(Spree::Vendor) %>
               <div class="form-group mb-0 flex-grow-1" style="max-width: 400px;">
                 <label class="font-weight-semibold mb-1" for="update-vendor-select">Select Vendor</label>
-                <select name="update_vendor_id" id="update-vendor-select" class="select2 form-control">
-                  <option value="">— Select a vendor —</option>
-                  <% @vendors.each do |vendor| %>
-                    <option value="<%= vendor.id %>" <%= 'selected' if vendor.id.to_s == @update_vendor_id.to_s %>>
-                      <%= vendor.name %>
-                    </option>
+                <select name="update_vendor_id" id="update-vendor-select" class="form-control" data-preselected-id="<%= @update_vendor_id.to_s %>">
+                  <% if @update_vendor_id.present? && defined?(Spree::Vendor) %>
+                    <% preselected_v = Spree::Vendor.find_by(id: @update_vendor_id) %>
+                    <% if preselected_v %>
+                      <option value="<%= preselected_v.id %>" selected><%= preselected_v.name %></option>
+                    <% end %>
                   <% end %>
                 </select>
               </div>
@@ -252,7 +242,7 @@
             <%= render partial: 'svg_icon', locals: { icon: 'truck', size: 14, css_class: 'mr-1' } %>
             Set Shipping Category
           </button>
-          <% if defined?(Spree::Vendor) && @vendors.present? %>
+          <% if defined?(Spree::Vendor) %>
             <button type="button" class="btn btn-outline-secondary btn-sm"
                     data-action="update-bulk-set" data-field="vendor">
               <%= render partial: 'svg_icon', locals: { icon: 'home', size: 14, css_class: 'mr-1' } %>
@@ -411,21 +401,18 @@
 
               <%# Vendor + Taxons -%>
               <div class="row">
-                <% if defined?(Spree::Vendor) && @vendors.present? %>
+                <% if defined?(Spree::Vendor) %>
                   <div class="col-12 col-md-4">
                     <div class="form-group">
                       <label class="font-weight-semibold"><%= Spree.t(:vendor, default: 'Vendor') %></label>
+                      <% current_vendor = product.respond_to?(:vendor) ? product.vendor : nil %>
                       <select name="product_updates[<%= p_id %>][vendor_id]"
-                              class="select2 form-control form-control-sm"
+                              class="form-control form-control-sm"
                               style="width: 100%;"
                               data-placeholder="<%= Spree.t('match_choices.none') %>"
                               data-role="row-vendor-select">
-                        <option value=""><%= Spree.t('match_choices.none') %></option>
-                        <% (@vendors || []).each do |vendor| %>
-                          <option value="<%= vendor.id %>"
-                                  <%= 'selected' if product.respond_to?(:vendor_id) && product.vendor_id == vendor.id %>>
-                            <%= vendor.name %>
-                          </option>
+                        <% if current_vendor %>
+                          <option value="<%= current_vendor.id %>" selected><%= current_vendor.name %></option>
                         <% end %>
                       </select>
                     </div>
@@ -438,15 +425,12 @@
                       <label class="font-weight-semibold"><%= Spree.t(:taxons) %></label>
                       <select name="product_updates[<%= p_id %>][taxon_ids][]"
                               multiple
-                              class="select2 form-control form-control-sm"
+                              class="form-control form-control-sm"
                               style="width: 100%;"
-                              data-placeholder="Select taxons…"
+                              data-placeholder="Search taxons…"
                               data-role="update-taxons-input">
-                        <% (@taxons || []).each do |taxon| %>
-                          <option value="<%= taxon.id %>"
-                                  <%= 'selected' if product.taxon_ids.include?(taxon.id) %>>
-                            <%= taxon.pretty_name %>
-                          </option>
+                        <% product.taxons.each do |taxon| %>
+                          <option value="<%= taxon.id %>" selected><%= taxon.pretty_name %></option>
                         <% end %>
                       </select>
                     </div>
