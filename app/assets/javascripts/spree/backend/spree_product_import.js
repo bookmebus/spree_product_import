@@ -1,0 +1,13 @@
+//= require spree/backend/product_import/dom_helpers
+//= require spree/backend/product_import/ui_updates
+//= require spree/backend/product_import/widget_initializers
+//= require spree/backend/product_import/row_operations
+//= require spree/backend/product_import/variant_manager
+//= require spree/backend/product_import/description_seo_manager
+//= require spree/backend/product_import/image_manager
+//= require spree/backend/product_import/stock_manager
+//= require spree/backend/product_import/price_manager
+//= require spree/backend/product_import/file_importer
+//= require spree/backend/product_import/event_handlers
+//= require spree/backend/product_import/update_products_manager
+//= require spree/backend/product_import_table

@@ -1,0 +1,28 @@
+<thead height="40" style="position: sticky; top: 88px; z-index: 99;">
+   <tr class="flex p-0" style="background-color: white;">
+      <th style="background-color: white;">
+         <div class="mb-1">
+            <span class="text-muted" data-role="total-count" style="font-size: 16px;"></span>
+         </div>
+         <div class="d-flex align-items-center" style="gap: 8px;">
+            <button type="button" class="btn btn-primary btn-sm" data-action="toggle-all" data-state="expanded" aria-label="Collapse all">
+               <span data-role="toggle-all-label"><%= Spree.t(:collapse_all) %></span>
+            </button>
+            <button type="button" class="btn btn-danger btn-sm" data-action="remove-selected">
+               <span data-role="remove-selected-label"><%= Spree.t(:remove_selected, default: 'Remove selected') %> (0)</span>
+            </button>
+         </div>
+      </th>
+      <th style="background-color: white;">
+         <div class="d-flex justify-content-end align-items-center" style="gap: 8px;">
+            <span><%= Spree.t(:select_all) %></span>
+            <input
+               type="checkbox"
+               data-role="select-all"
+               style="transform: scale(1.2);"
+               checked="checked"
+            />
+         </div>
+      </th>
+   </tr>
+</thead>

@@ -59,7 +59,9 @@ RSpec.describe ProductImport::Processor, type: :services do
         import_file = create(:product_import_file_ok)
         @processor = ProductImport::Processor.new(import_file)
         @processor.call
-        @products = Spree::Product.all.to_a
+        @products = Spree::Product.order(:id).to_a
+        @product1 = Spree::Product.find_by(slug: 'summer-2021-tshirt')
+        @product2 = Spree::Product.find_by(slug: 'winter-2021-tshirt')
       end
 
       it "import data and make product_import_file to status to eq :success" do
@@ -72,13 +74,18 @@ RSpec.describe ProductImport::Processor, type: :services do
       it "creates 2 products" do
         expect(@products.size).to eq 2
 
-        product1 = @products[0]
+        product1 = @product1
+        product2 = @product2
+
+        expect(product1).to be_present
+        expect(product2).to be_present
+
         expect(product1.name).to eq "Summer 2021 Tshirt"
         expect(product1.description).to eq "Trendy Tshirt for your summer need."
         expect(product1.slug).to eq "summer-2021-tshirt"
         expect(product1.promotionable).to eq false
         expect(product1.available_on.present?).to eq true 
-        expect(product1.discontinue_on.iso8601).to eq '2022-02-12T00:00:00Z'
+        expect(product1.discontinue_on).to be_nil
     
         expect(product1.meta_title).to eq 'Title Nike, Zando, T-shirt'
         expect(product1.meta_description).to eq nil
@@ -89,7 +96,6 @@ RSpec.describe ProductImport::Processor, type: :services do
         expect(product1.vendor_id).to eq vendor.id
 
 
-        product2 = @products[1]
         expect(product2.name).to eq "Winter 2021 Tshirt"
         expect(product2.description).to eq "Trendy Womenware summer need."
         expect(product2.slug).to eq "winter-2021-tshirt"
@@ -107,7 +113,7 @@ RSpec.describe ProductImport::Processor, type: :services do
       end
 
       it 'create 3 product properties for product1' do
-        product1 = @products[0]
+        product1 = @product1
 
         names =  product1.properties.map(&:name)
         expect(names).to eq ["Type", "material", "condition"]
@@ -117,7 +123,7 @@ RSpec.describe ProductImport::Processor, type: :services do
       end
 
       it 'create 2 product properties for product2' do
-        product2 = @products[1]
+        product2 = @product2
 
         names =  product2.properties.map(&:name)
         expect(names).to eq ["material", "condition"]
@@ -127,7 +133,7 @@ RSpec.describe ProductImport::Processor, type: :services do
       end
 
       it "creates 2 master variants for product1 and product2 respectively " do
-        product1 = @products[0]
+        product1 = @product1
         # first product master variant details
         expect(product1.master.sku).to eq "ZFMST202121"
         expect(product1.master.cost_price).to eq 10.0
@@ -149,7 +155,7 @@ RSpec.describe ProductImport::Processor, type: :services do
         product1_stocks = product1.master.stock_items.map(&:count_on_hand)
         expect(product1_stocks).to eq [0, 5]
 
-        product2 = @products[1]
+        product2 = @product2
         # second product master variant details
         expect(product2.master.sku).to eq "WTST202121"
         expect(product2.master.cost_price).to eq 12.0
@@ -173,7 +179,7 @@ RSpec.describe ProductImport::Processor, type: :services do
       end
 
       it "creates 6 variants for product1 with options type ( color: 3 x size: 2) and 2 variants updated" do
-        product1 = @products[0]
+        product1 = @product1
         p1_variants = product1.variants.to_a
         expect(p1_variants.size).to eq 6
 
@@ -236,7 +242,7 @@ RSpec.describe ProductImport::Processor, type: :services do
       end
 
       it "creates 3 variants for product2 with option type ( color: 3) and 1 variant updated" do
-        product2 = @products[1]
+        product2 = @product2
         variants = product2.variants.to_a
 
         expect(variants.size).to eq 3

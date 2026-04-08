@@ -1,0 +1,81 @@
+<%# Description & SEO Management Modal %>
+<div id="description-seo-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center; overflow-y: auto;">
+   <div style="background: white; border-radius: 4px; max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.3); margin: 20px;">
+      <div style="padding: 20px; border-bottom: 1px solid #ddd; position: sticky; top: 0; background: white; z-index: 999;">
+         <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><%= Spree.t(:manage_description_seo, default: 'Manage Description & SEO') %></h5>
+            <button type="button" class="btn btn-link p-0" data-action="close-description-seo-modal" aria-label="Close">
+               <span style="font-size: 24px;">&times;</span>
+            </button>
+         </div>
+      </div>
+
+      <div style="padding: 20px;">
+         <!-- Detail with Trix Editor -->
+         <div class="form-group">
+            <label for="modal-detail-input">
+               <%= Spree.t(:detail, default: 'Detail') %>
+            </label>
+            <input 
+               type="hidden" 
+               id="modal-detail-input" 
+               value=""/>
+            <trix-editor 
+               input="modal-detail-input"
+               class="form-control"
+               placeholder="<%= Spree.t(:enter_product_detail, default: 'Enter product detail...') %>"></trix-editor>
+            <small class="text-muted"><%= Spree.t(:detail_help, default: 'Detailed information about the product visible to customers') %></small>
+         </div>
+
+         <!-- Meta Title -->
+         <div class="form-group">
+            <label for="modal-meta-title">
+               <%= Spree.t(:meta_title) %>
+            </label>
+            <input 
+               type="text" 
+               id="modal-meta-title" 
+               class="form-control"
+               placeholder="<%= Spree.t(:enter_meta_title, default: 'Enter SEO title...') %>"/>
+            <small class="text-muted"><%= Spree.t(:meta_title_help, default: 'Title tag for search engines (recommended: 50-60 characters)') %></small>
+         </div>
+
+         <!-- Meta Keywords -->
+         <div class="form-group">
+            <label for="modal-meta-keywords">
+               <%= Spree.t(:meta_keywords) %>
+            </label>
+            <input 
+               type="text" 
+               id="modal-meta-keywords" 
+               class="form-control"
+               placeholder="<%= Spree.t(:enter_meta_keywords, default: 'Enter keywords separated by commas...') %>"/>
+            <small class="text-muted"><%= Spree.t(:meta_keywords_help, default: 'Keywords for search engines, separated by commas') %></small>
+         </div>
+
+         <!-- Meta Description -->
+         <div class="form-group mb-0">
+            <label for="modal-meta-description">
+               <%= Spree.t(:meta_description) %>
+            </label>
+            <textarea 
+               id="modal-meta-description" 
+               class="form-control" 
+               rows="4"
+               placeholder="<%= Spree.t(:enter_meta_description, default: 'Enter SEO description...') %>"></textarea>
+            <small class="text-muted"><%= Spree.t(:meta_description_help, default: 'Meta description for search engines (recommended: 150-160 characters)') %></small>
+         </div>
+      </div>
+
+      <div style="padding: 20px; border-top: 1px solid #ddd; position: sticky; bottom: 0; background: white; z-index: 1;">
+         <div class="d-flex justify-content-end" style="gap: 10px;">
+            <button type="button" class="btn btn-secondary" data-action="close-description-seo-modal">
+               <%= Spree.t(:cancel, default: 'Cancel') %>
+            </button>
+            <button type="button" class="btn btn-primary" data-action="save-description-seo">
+               <%= Spree.t(:save, default: 'Save') %>
+            </button>
+         </div>
+      </div>
+   </div>
+</div>

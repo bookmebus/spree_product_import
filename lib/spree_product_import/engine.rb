@@ -9,6 +9,14 @@ module SpreeProductImport
       g.test_framework :rspec
     end
 
+    # Add assets to the asset pipeline
+    initializer 'spree_product_import.assets' do |app|
+      app.config.assets.precompile += %w[
+        spree/backend/product_import_table.js
+        spree/backend/spree_product_import.js
+      ]
+    end
+
     initializer 'spree_product_import.environment', before: :load_config_initializers do |_app|
       SpreeProductImport::Config = SpreeProductImport::Configuration.new
     end
