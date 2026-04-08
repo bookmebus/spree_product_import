@@ -4,23 +4,12 @@ module ProductImportDataLoaders
   extend ActiveSupport::Concern
 
   included do
-    # before_action :load_products, only: :index
     before_action :load_shipping_categories, only: %i[new create bulk_update]
     # before_action :load_stock_locations, only: %i[new bulk_update]
     # before_action :load_option_types, only: %i[new create]
   end
 
   private
-
-  # Loads paginated products for the index page
-  # Uses current_ability to scope accessible products
-  def load_products
-    @products = Spree::Product
-      .accessible_by(current_ability, :index)
-      .order(created_at: :desc)
-      .page(params[:products_page])
-      .per(products_per_page)
-  end
 
   # Loads all shipping categories for product import dropdowns
   def load_shipping_categories
@@ -120,25 +109,4 @@ module ProductImportDataLoaders
     @update_products = @update_q.result.page(params[:update_page]).per(@update_per_page)
   end
 
-  # Validates and returns per-page limit for products pagination
-  # Enforces minimum of 25 and maximum of 200 products per page
-  # Returns: Integer between 25 and 200
-  def products_per_page
-    per_page = params[:products_per_page].to_i
-    return 25 if per_page <= 0
-    return 200 if per_page > 200
-
-    per_page
-  end
-
-  # Validates and returns per-page limit for vendors pagination
-  # Enforces minimum of 25 and maximum of 200 vendors per page
-  # Returns: Integer between 25 and 200
-  def vendors_per_page
-    per_page = params[:vendors_per_page].to_i
-    return 25 if per_page <= 0
-    return 200 if per_page > 200
-
-    per_page
-  end
 end

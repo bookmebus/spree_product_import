@@ -4,16 +4,6 @@ RSpec.describe ProductImportDataLoaders, type: :controller do
   controller(Spree::Admin::BaseController) do
     include ProductImportDataLoaders
 
-    def index
-      load_products
-      render plain: 'ok'
-    end
-
-    def test_load_vendors
-      load_vendors
-      render plain: 'ok'
-    end
-
     def test_load_shipping_categories
       load_shipping_categories
       render plain: 'ok'
@@ -49,50 +39,10 @@ RSpec.describe ProductImportDataLoaders, type: :controller do
 
     routes.draw do
       path = 'spree/admin/base'
-      get 'index' => "#{path}#index"
-      get 'test_load_vendors' => "#{path}#test_load_vendors"
       get 'test_load_shipping_categories' => "#{path}#test_load_shipping_categories"
       get 'test_load_stock_locations' => "#{path}#test_load_stock_locations"
       get 'test_load_option_types' => "#{path}#test_load_option_types"
       get 'test_load_update_products' => "#{path}#test_load_update_products"
-    end
-  end
-
-  describe '#load_products' do
-    let!(:product1) { create(:product, created_at: 1.day.ago) }
-    let!(:product2) { create(:product, created_at: 2.days.ago) }
-
-    it 'loads products ordered by created_at desc' do
-      get :index
-      expect(assigns(:products)).to eq([product1, product2])
-    end
-
-    it 'paginates products' do
-      get :index, params: { products_page: 1 }
-      expect(assigns(:products)).to be_a(ActiveRecord::Relation)
-    end
-
-    it 'respects per_page parameter' do
-      create_list(:product, 30)
-      get :index, params: { products_per_page: 50 }
-      expect(assigns(:products).count).to be > 25
-    end
-  end
-
-  describe '#load_vendors' do
-    before { skip unless defined?(Spree::Vendor) }
-
-    let!(:vendor1) { create(:vendor, name: 'Alpha Vendor') }
-    let!(:vendor2) { create(:vendor, name: 'Beta Vendor') }
-
-    it 'loads vendors ordered by name' do
-      get :test_load_vendors
-      expect(assigns(:vendors)).to eq([vendor1, vendor2])
-    end
-
-    it 'paginates vendors' do
-      get :test_load_vendors, params: { vendors_page: 1 }
-      expect(assigns(:vendors)).to be_a(ActiveRecord::Relation)
     end
   end
 
@@ -229,37 +179,4 @@ RSpec.describe ProductImportDataLoaders, type: :controller do
     end
   end
 
-  describe '#products_per_page' do
-    it 'returns 25 for invalid values' do
-      get :index, params: { products_per_page: 0 }
-      result = controller.send(:products_per_page)
-      expect(result).to eq(25)
-    end
-
-    it 'caps at 200' do
-      get :index, params: { products_per_page: 500 }
-      result = controller.send(:products_per_page)
-      expect(result).to eq(200)
-    end
-
-    it 'returns valid value within range' do
-      get :index, params: { products_per_page: 50 }
-      result = controller.send(:products_per_page)
-      expect(result).to eq(50)
-    end
-  end
-
-  describe '#vendors_per_page' do
-    it 'returns 25 for invalid values' do
-      get :test_load_vendors, params: { vendors_per_page: -5 }
-      result = controller.send(:vendors_per_page)
-      expect(result).to eq(25)
-    end
-
-    it 'caps at 200' do
-      get :test_load_vendors, params: { vendors_per_page: 300 }
-      result = controller.send(:vendors_per_page)
-      expect(result).to eq(200)
-    end
-  end
 end

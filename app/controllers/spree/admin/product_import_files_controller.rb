@@ -3,13 +3,6 @@ module Spree
     class ProductImportFilesController < ResourceController
       include ProductImportDataLoaders
 
-      # GET /admin/product_import_files
-      # Lists all product import files with pagination and filtering
-      # The collection is loaded via the collection method override below
-      def index
-        # Collection loaded via before_action
-      end
-
       # GET /admin/product_import_files/new
       # Renders the product import form
       # Supports two modes:
