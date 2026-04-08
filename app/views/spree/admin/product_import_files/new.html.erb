@@ -56,10 +56,6 @@
     }
   </style>
   <script>
-    // Pass option types data to JavaScript module
-    window.spreeProductImportOptionTypes = <%= raw (@option_types || []).map { |ot| { id: ot.id, name: ot.name, presentation: ot.presentation, option_values: ot.option_values.map { |ov| { id: ov.id, name: ov.name, presentation: ov.presentation } } } }.to_json %>;
-    // Pass stock locations data to JavaScript module
-    window.spreeProductImportStockLocations = <%= raw (@stock_locations || []).map { |sl| { id: sl.id, name: sl.name } }.to_json %>;
     // Pass currency to JavaScript module
     window.spreeProductImportCurrency = '<%= @default_price_currency || Spree::Config[:currency] %>';
   </script>

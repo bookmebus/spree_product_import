@@ -366,4 +366,42 @@ RSpec.describe Spree::Admin::ProductImportFilesController, type: :controller do
       end
     end
   end
+
+  describe 'GET #option_types' do
+    it 'returns option types as JSON' do
+      get :option_types, format: :json
+      expect(response).to have_http_status(:success)
+      json = JSON.parse(response.body)
+      expect(json).to be_an(Array)
+      expect(json.first).to include('id', 'name', 'presentation', 'option_values')
+    end
+  end
+
+  describe 'GET #stock_locations' do
+    let!(:stock_location) { create(:stock_location) }
+
+    it 'returns all active stock locations when no vendor_id given' do
+      get :stock_locations, format: :json
+      expect(response).to have_http_status(:success)
+      json = JSON.parse(response.body)
+      expect(json).to be_an(Array)
+      expect(json.map { |sl| sl['id'] }).to include(stock_location.id)
+    end
+
+    context 'filtered by vendor_id' do
+      before { skip unless defined?(Spree::Vendor) }
+
+      let(:vendor) { create(:vendor) }
+      let!(:vendor_location) { create(:stock_location, vendor: vendor) }
+      let!(:other_location) { create(:stock_location) }
+
+      it 'returns only locations for the given vendor' do
+        get :stock_locations, params: { vendor_id: vendor.id }, format: :json
+        json = JSON.parse(response.body)
+        ids = json.map { |sl| sl['id'] }
+        expect(ids).to include(vendor_location.id)
+        expect(ids).not_to include(other_location.id)
+      end
+    end
+  end
 end

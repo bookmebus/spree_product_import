@@ -580,16 +580,12 @@ Spree.ProductImport.UpdateProductsManager = (function () {
     }
     if (Variants && typeof Variants.init === 'function') {
       Variants.init(domAdapter);
-      if (window.spreeProductImportOptionTypes) {
-        Variants.setOptionTypesData(window.spreeProductImportOptionTypes);
-      }
     }
     if (Images && typeof Images.init === 'function') {
       Images.init(domAdapter);
     }
     if (Stock && typeof Stock.init === 'function') {
-      var stockLocations = window.spreeProductImportStockLocations || [];
-      Stock.init(stockLocations);
+      Stock.init([]);
     }
     if (Price && typeof Price.init === 'function') {
       var defaultCurrency = window.spreeProductImportCurrency || 'USD';

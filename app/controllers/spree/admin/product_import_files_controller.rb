@@ -61,6 +61,32 @@ module Spree
         render json: scope.limit(50).map { |v| { id: v.id, name: v.name } }
       end
 
+      # GET /admin/product_import_files/option_types.json
+      # Returns all option types with their option values for the variant modal AJAX init.
+      def option_types
+        option_value_sub = Spree::OptionValue.reflect_on_association(:translations) \
+          ? { option_values: :translations } : :option_values
+        option_type_includes = Spree::OptionType.reflect_on_association(:translations) \
+          ? [:translations, option_value_sub] : [option_value_sub]
+
+        scope = Spree::OptionType.includes(*option_type_includes).order(:position, :name)
+        render json: scope.map { |ot|
+          { id: ot.id, name: ot.name, presentation: ot.presentation,
+            option_values: ot.option_values.map { |ov| { id: ov.id, name: ov.name, presentation: ov.presentation } } }
+        }
+      end
+
+      # GET /admin/product_import_files/stock_locations.json
+      # Returns stock locations for the given vendor_id (or all active if none given).
+      def stock_locations
+        if (vendor_id = params[:vendor_id].presence) && defined?(Spree::Vendor)
+          scope = Spree::StockLocation.where(vendor_id: vendor_id).order(:name)
+        else
+          scope = Spree::StockLocation.active.order(:name)
+        end
+        render json: scope.map { |sl| { id: sl.id, name: sl.name } }
+      end
+
       private
 
       # ========== Parameter Handling ==========
@@ -96,6 +122,13 @@ module Spree
             ],
             images: [:url, :alt]
           ).to_h.deep_symbolize_keys
+
+          # stock_items and prices have fully-dynamic nested keys (variant_id → location_id → fields)
+          # new_images contains file uploads — all cannot be declared statically with permit.
+          %i[stock_items prices new_images].each do |key|
+            next unless product_data[key].present?
+            permitted[product_id][key] = product_data[key].to_unsafe_h.deep_symbolize_keys
+          end
         end
         permitted
       end

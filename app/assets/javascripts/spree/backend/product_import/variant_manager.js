@@ -14,6 +14,10 @@ Spree.ProductImport.VariantManager = (function() {
   var modalOptionTypes = [];
   var optionTypesData = [];
 
+  // Lazy-fetch state for option types
+  var optionTypesFetched = false;
+  var optionTypesFetching = false;
+
   // Per-row form-field base override
   var rowFormBases = {};
 
@@ -38,8 +42,16 @@ Spree.ProductImport.VariantManager = (function() {
 
     loadExistingVariantData(rowIndex);
     modal.style.display = 'flex';
-    renderModalVariants();
-    initOptionTypesSearch();
+
+    if (optionTypesFetched) {
+      renderModalVariants();
+      initOptionTypesSearch();
+    } else if (!optionTypesFetching) {
+      fetchOptionTypes(function() {
+        renderModalVariants();
+        initOptionTypesSearch();
+      });
+    }
   }
 
   function closeVariantModal() {
@@ -64,6 +76,64 @@ Spree.ProductImport.VariantManager = (function() {
     }
     
     clearOptionTypesSearch();
+  }
+
+  // ========== Option Types Lazy Fetch ==========
+
+  function fetchOptionTypes(callback) {
+    optionTypesFetching = true;
+    var container = document.getElementById('modal-option-types-container');
+    if (container) {
+      container.innerHTML = '<p class="text-center text-muted py-3">Loading option types\u2026</p>';
+    }
+
+    jQuery.getJSON('/admin/product_import_files/option_types', function(data) {
+      optionTypesFetched = true;
+      optionTypesFetching = false;
+      optionTypesData = data || [];
+      renderOptionTypeCheckboxes(optionTypesData);
+      // Restore any already-loaded option type selections
+      modalOptionTypes.forEach(function(otId) {
+        var cb = document.querySelector('.modal-option-type-checkbox[data-option-type-id="' + otId + '"]');
+        if (cb) cb.checked = true;
+      });
+      if (typeof callback === 'function') callback();
+    }).fail(function() {
+      optionTypesFetching = false;
+      if (container) {
+        container.innerHTML = '<p class="text-center text-danger py-3">Failed to load option types.</p>';
+      }
+    });
+  }
+
+  function renderOptionTypeCheckboxes(data) {
+    var container = document.getElementById('modal-option-types-container');
+    if (!container) return;
+
+    if (!data || data.length === 0) {
+      container.innerHTML = '<p class="text-center text-muted py-3">No option types found.</p>';
+      return;
+    }
+
+    var html = '';
+    data.forEach(function(ot) {
+      var safeId        = String(ot.id);
+      var safeName      = String(ot.name || '').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+      var safePresent   = String(ot.presentation || '').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+      html += '<div class="custom-control custom-checkbox mb-2 option-type-item"' +
+              ' data-option-type-name="' + safeName.toLowerCase() + '"' +
+              ' data-option-type-presentation="' + safePresent.toLowerCase() + '">' +
+              '<input type="checkbox" class="custom-control-input modal-option-type-checkbox"' +
+              ' id="modal_option_type_' + safeId + '"' +
+              ' value="' + safeId + '"' +
+              ' data-option-type-id="' + safeId + '"' +
+              ' data-option-type-name="' + safeName + '"' +
+              ' data-option-type-presentation="' + safePresent + '">' +
+              '<label class="custom-control-label" for="modal_option_type_' + safeId + '">' +
+              safePresent + '</label>' +
+              '</div>';
+    });
+    container.innerHTML = html;
   }
 
   // ========== Option Types Search ==========

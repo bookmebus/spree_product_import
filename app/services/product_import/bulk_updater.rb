@@ -111,6 +111,7 @@ module ProductImport
       create_new_variants(product, data)
       create_new_images(product, data)
       update_stock_levels(product, data)
+      update_prices(product, data)
     end
 
     # Updates product's taxon (category) associations
@@ -194,29 +195,62 @@ module ProductImport
       end
     end
 
-    # Updates stock levels for product variants
-    # Delegates to update_variant_stock for each variant
+    # Updates stock levels for product variants.
+    # Param structure: stock_items: { variant_id => { location_id => { count_on_hand, backorderable } } }
+    # Note: keys may be Symbols (from deep_symbolize_keys), so .to_s is required for AR integer casts.
     def update_stock_levels(product, data)
-      return unless data[:stock_updates].present? && data[:stock_updates].respond_to?(:each)
+      return unless data[:stock_items].present? && data[:stock_items].respond_to?(:each)
 
-      data[:stock_updates].each do |variant_id, stock_data|
-        variant = find_variant(product, variant_id)
+      data[:stock_items].each do |variant_id, locations|
+        variant = find_variant(product, variant_id.to_s)
         next unless variant
+        next unless locations.respond_to?(:each)
 
-        update_variant_stock(variant, stock_data)
+        locations.each do |location_id, stock_data|
+          update_variant_stock(variant, location_id.to_s, stock_data)
+        end
       end
     end
 
-    # Sets count_on_hand for a specific variant at a stock location
-    # Creates stock item if it doesn't exist
-    def update_variant_stock(variant, stock_data)
-      return unless stock_data[:stock_location_id].present? && stock_data[:quantity].present?
-
-      stock_location = Spree::StockLocation.find_by(id: stock_data[:stock_location_id])
+    # Sets count_on_hand and backorderable for a variant at a specific stock location.
+    # Mirrors StockItemsController reference: set_up_stock_item + StockMovement for count,
+    # direct attribute assignment + save for backorderable.
+    def update_variant_stock(variant, location_id, stock_data)
+      stock_location = Spree::StockLocation.find_by(id: location_id)
       return unless stock_location
 
-      stock_item = stock_location.stock_items.where(variant_id: variant.id).first_or_create
-      stock_item.set_count_on_hand(stock_data[:quantity].to_i)
+      # Use Spree's native find-or-create (matches reference: set_up_stock_item)
+      stock_item = stock_location.set_up_stock_item(variant)
+
+      # Adjust count via StockMovement delta (matches StockItemsController#create reference)
+      new_count = stock_data[:count_on_hand].to_i
+      delta = new_count - stock_item.count_on_hand.to_i
+      if delta != 0
+        movement = stock_location.stock_movements.build(quantity: delta)
+        movement.stock_item = stock_item
+        movement.save
+      end
+
+      # Update backorderable directly (matches StockItemsController#update + determine_backorderable)
+      stock_item.backorderable = stock_data[:backorderable].to_s == '1'
+      stock_item.save
+    end
+
+    # Updates prices for product variants.
+    # Param structure: prices: { variant_id => { price, compare_price, currency } }
+    def update_prices(product, data)
+      return unless data[:prices].present? && data[:prices].respond_to?(:each)
+
+      data[:prices].each do |variant_id, price_data|
+        variant = find_variant(product, variant_id.to_s)
+        next unless variant
+
+        currency = price_data[:currency].presence || Spree::Config[:currency]
+        price = variant.prices.find_or_initialize_by(currency: currency)
+        price.amount            = price_data[:price]         if price_data[:price].present?
+        price.compare_at_amount = price_data[:compare_price] if price_data.key?(:compare_price)
+        price.save if price.changed?
+      end
     end
 
     # Parses available_on date string into Time object

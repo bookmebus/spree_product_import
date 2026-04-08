@@ -43,7 +43,42 @@ Spree.ProductImport.StockManager = (function () {
       nameEl.textContent = productName;
     }
 
-    // Update stock location info
+    // Load existing stock data (sets stockLocations from data-stock-locations attribute)
+    loadStockData(rowIndex);
+
+    // Show modal immediately so user sees it open
+    modal.style.display = 'flex';
+
+    // If no stock locations were found from pre-loaded data, fetch lazily by vendor_id
+    if (stockLocations.length === 0) {
+      var vendorId = parentCard ? parentCard.getAttribute('data-vendor-id') : null;
+      fetchStockLocations(vendorId, function() {
+        updateStockLocationBanner();
+        renderStockVariants();
+      });
+    } else {
+      updateStockLocationBanner();
+      renderStockVariants();
+    }
+  }
+
+  function fetchStockLocations(vendorId, callback) {
+    var container = document.querySelector('[data-role="stock-variants-container"]');
+    if (container) {
+      container.innerHTML = '<p class="text-muted text-center py-4">Loading stock locations\u2026</p>';
+    }
+    var url = '/admin/product_import_files/stock_locations';
+    if (vendorId) url += '?vendor_id=' + encodeURIComponent(vendorId);
+    jQuery.getJSON(url, function(data) {
+      stockLocations = Array.isArray(data) ? data : [];
+      if (typeof callback === 'function') callback();
+    }).fail(function() {
+      stockLocations = [];
+      if (typeof callback === 'function') callback();
+    });
+  }
+
+  function updateStockLocationBanner() {
     var locationEl = document.querySelector('[data-role="stock-modal-location-name"]');
     var locationWrapper = document.querySelector('[data-role="stock-location-info-wrapper"]');
     if (locationEl && stockLocations.length > 0) {
@@ -52,15 +87,6 @@ Spree.ProductImport.StockManager = (function () {
     } else if (locationWrapper) {
       locationWrapper.style.display = 'none';
     }
-
-    // Load existing stock data
-    loadStockData(rowIndex);
-
-    // Render variants
-    renderStockVariants();
-
-    // Show modal
-    modal.style.display = 'flex';
   }
 
   function closeStockModal() {

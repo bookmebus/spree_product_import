@@ -42,21 +42,7 @@
                
                <!-- Option Types List with Scroll -->
                <div id="modal-option-types-container" style="max-height: 300px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px; padding: 10px;">
-                  <% (@option_types || []).each do |option_type| %>
-                     <div class="custom-control custom-checkbox mb-2 option-type-item" 
-                          data-option-type-name="<%= option_type.name.downcase %>"
-                          data-option-type-presentation="<%= option_type.presentation.downcase %>">
-                        <input type="checkbox" class="custom-control-input modal-option-type-checkbox" 
-                               id="modal_option_type_<%= option_type.id %>" 
-                               value="<%= option_type.id %>"
-                               data-option-type-id="<%= option_type.id %>"
-                               data-option-type-name="<%= option_type.name %>"
-                               data-option-type-presentation="<%= option_type.presentation %>">
-                        <label class="custom-control-label" for="modal_option_type_<%= option_type.id %>">
-                           <%= option_type.presentation %>
-                        </label>
-                     </div>
-                  <% end %>
+                  <%# Populated by variant_manager.js via AJAX on first modal open %>
                </div>
                
                <!-- No results message -->

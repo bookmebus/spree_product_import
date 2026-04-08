@@ -64,13 +64,6 @@ Spree.ProductImportTable = (function () {
     // Set next row index
     RowOps.setNextIndex(nextIndex);
 
-    // Set option types data
-    if (optionTypes) {
-      setOptionTypesData(optionTypes);
-    } else if (window.spreeProductImportOptionTypes) {
-      setOptionTypesData(window.spreeProductImportOptionTypes);
-    }
-
     // Initialize existing rows
     Widgets.initExistingRows();
 

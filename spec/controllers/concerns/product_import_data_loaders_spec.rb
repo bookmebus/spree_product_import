@@ -9,16 +9,6 @@ RSpec.describe ProductImportDataLoaders, type: :controller do
       render plain: 'ok'
     end
 
-    def test_load_stock_locations
-      load_stock_locations
-      render plain: 'ok'
-    end
-
-    def test_load_option_types
-      load_option_types
-      render plain: 'ok'
-    end
-
     def test_load_update_products
       load_update_products
       render plain: 'ok'
@@ -40,8 +30,6 @@ RSpec.describe ProductImportDataLoaders, type: :controller do
     routes.draw do
       path = 'spree/admin/base'
       get 'test_load_shipping_categories' => "#{path}#test_load_shipping_categories"
-      get 'test_load_stock_locations' => "#{path}#test_load_stock_locations"
-      get 'test_load_option_types' => "#{path}#test_load_option_types"
       get 'test_load_update_products' => "#{path}#test_load_update_products"
     end
   end
@@ -52,48 +40,6 @@ RSpec.describe ProductImportDataLoaders, type: :controller do
     it 'loads all shipping categories' do
       get :test_load_shipping_categories
       expect(assigns(:shipping_categories)).to include(shipping_category)
-    end
-  end
-
-  describe '#load_stock_locations' do
-    let!(:stock_location) { create(:stock_location) }
-
-    context 'in create mode' do
-      it 'loads all stock locations' do
-        get :test_load_stock_locations
-        expect(assigns(:stock_locations)).to include(stock_location)
-      end
-    end
-
-    context 'in update mode with vendor' do
-      before { skip unless defined?(Spree::Vendor) }
-
-      let(:vendor) { create(:vendor) }
-      let!(:vendor_stock_location) { create(:stock_location, vendor: vendor) }
-      let!(:other_stock_location) { create(:stock_location) }
-
-      it 'filters stock locations by vendor' do
-        get :test_load_stock_locations, params: { mode: 'update', update_vendor_id: vendor.id }
-        expect(assigns(:stock_locations)).to include(vendor_stock_location)
-        expect(assigns(:stock_locations)).not_to include(other_stock_location)
-      end
-    end
-  end
-
-  describe '#load_option_types' do
-    let!(:option_type) { create(:option_type_with_values) }
-
-    it 'loads option types with option values' do
-      get :test_load_option_types
-      expect(assigns(:option_types)).to include(option_type)
-    end
-
-    it 'orders by position and name' do
-      option_type2 = create(:option_type, name: 'AAA', position: 2)
-      option_type1 = create(:option_type, name: 'ZZZ', position: 1)
-
-      get :test_load_option_types
-      expect(assigns(:option_types).first).to eq(option_type1)
     end
   end
 

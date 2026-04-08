@@ -5,8 +5,6 @@ module ProductImportDataLoaders
 
   included do
     before_action :load_shipping_categories, only: %i[new create bulk_update]
-    # before_action :load_stock_locations, only: %i[new bulk_update]
-    # before_action :load_option_types, only: %i[new create]
   end
 
   private
@@ -14,29 +12,6 @@ module ProductImportDataLoaders
   # Loads all shipping categories for product import dropdowns
   def load_shipping_categories
     @shipping_categories = Spree::ShippingCategory.order(:name)
-  end
-
-  # Loads stock locations for inventory management
-  # In update mode, filters by selected vendor to show only relevant locations
-  # In create mode, shows all stock locations
-  def load_stock_locations
-    # In update mode, filter stock locations by the selected vendor
-    if params[:mode] == 'update' && params[:update_vendor_id].present?
-      vendor_id = params[:update_vendor_id]
-      @stock_locations = Spree::StockLocation.where(vendor_id: vendor_id).order(:name)
-    else
-      @stock_locations = Spree::StockLocation.active.order(:name)
-    end
-  end
-
-  # Loads option types with their option values for variant creation
-  # Ordered by position and name for consistent display
-  def load_option_types
-    option_value_includes = Spree::OptionValue.reflect_on_association(:translations) ? { option_values: :translations } : :option_values
-    option_type_includes = Spree::OptionType.reflect_on_association(:translations) ? [:translations, option_value_includes] : [option_value_includes]
-    @option_types = Spree::OptionType
-      .includes(*option_type_includes)
-      .order(:position, :name)
   end
 
   # Loads products for bulk update mode
