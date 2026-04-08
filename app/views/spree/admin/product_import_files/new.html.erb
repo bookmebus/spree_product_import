@@ -209,13 +209,11 @@
                   Set Vendor
                </button>
             <% end %>
-            <% if @taxons.present? %>
-               <button type="button" class="btn btn-outline-secondary btn-sm"
-                       data-action="open-bulk-apply" data-field="taxons">
-                  <%= render partial: 'svg_icon', locals: { icon: 'tag', size: 14, css_class: 'mr-1' } %>
-                  Set Taxons
-               </button>
-            <% end %>
+            <button type="button" class="btn btn-outline-secondary btn-sm"
+                    data-action="open-bulk-apply" data-field="taxons">
+               <%= render partial: 'svg_icon', locals: { icon: 'tag', size: 14, css_class: 'mr-1' } %>
+               Set Taxons
+            </button>
          </div>
       </div>
       <%# ── / Action List Toolbar ────────────────────────────────────── %>
@@ -224,6 +222,11 @@
          <table class="table table-striped" id="product-import-table" data-next-index="<%= rows.length %>">
             <%= render partial: 'table_header' %>
             <tbody>
+               <%
+                  all_preselected_taxon_ids = rows.flat_map { |r| (r[:taxon_ids] || r['taxon_ids'] || []).map(&:to_s) }.uniq
+                  preselected_taxons_by_id = all_preselected_taxon_ids.any? ?
+                    Spree::Taxon.where(id: all_preselected_taxon_ids).index_by { |t| t.id.to_s } : {}
+               %>
                <% rows.each_with_index do |row, index| %>
                   <% row_name = row[:name] || row['name'] %>
                   <% row_sku = row[:sku] || row['sku'] %>
@@ -338,9 +341,10 @@
                            <div class="col-12 col-md-8" data-hook="admin_product_import_form_taxons">
                               <div class="form-group">
                                  <label for="product_import_files_<%= index %>_taxon_ids"><%= Spree.t(:taxons) %></label>
-                                 <select name="product_import_files[<%= index %>][taxon_ids][]" id="product_import_files_<%= index %>_taxon_ids" class="select2 w-100" multiple data-role="row-taxons-select">
-                                    <% (@taxons || []).each do |taxon| %>
-                                       <option value="<%= taxon.id %>" <%= row_taxon_ids.include?(taxon.id.to_s) ? 'selected' : '' %>><%= taxon.pretty_name %></option>
+                                 <% preselected_taxons = row_taxon_ids.map { |id| preselected_taxons_by_id[id] }.compact.map { |t| { id: t.id.to_s, text: t.pretty_name } } %>
+                                 <select name="product_import_files[<%= index %>][taxon_ids][]" id="product_import_files_<%= index %>_taxon_ids" class="w-100" multiple data-role="row-taxons-select" data-preselected="<%= preselected_taxons.to_json %>">
+                                    <% preselected_taxons.each do |taxon| %>
+                                       <option value="<%= taxon[:id] %>" selected><%= taxon[:text] %></option>
                                     <% end %>
                                  </select>
                               </div>

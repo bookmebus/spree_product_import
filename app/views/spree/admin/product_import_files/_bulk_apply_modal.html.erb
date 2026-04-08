@@ -67,9 +67,6 @@
             <div class="form-group mb-0">
                <label class="font-weight-semibold"><%= Spree.t(:taxons) %></label>
                <select id="bulk-value-taxons" class="w-100" multiple>
-                  <% (@taxons || []).each do |taxon| %>
-                     <option value="<%= taxon.id %>"><%= taxon.pretty_name %></option>
-                  <% end %>
                </select>
             </div>
          </div>

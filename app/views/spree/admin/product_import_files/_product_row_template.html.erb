@@ -135,12 +135,10 @@
                   <select
                      name="product_import_files[__INDEX__][taxon_ids][]"
                      id="product_import_files___INDEX___taxon_ids"
-                     class="select2 w-100"
+                     class="w-100"
                      multiple
-                     data-role="row-taxons-select">
-                     <% (@taxons || []).each do |taxon| %>
-                       <option value="<%= taxon.id %>"><%= taxon.pretty_name %></option>
-                     <% end %>
+                     data-role="row-taxons-select"
+                     data-preselected="[]">
                   </select>
                </div>
             </div>

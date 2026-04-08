@@ -29,11 +29,6 @@ RSpec.describe ProductImportDataLoaders, type: :controller do
       render plain: 'ok'
     end
 
-    def test_load_taxons
-      load_taxons
-      render plain: 'ok'
-    end
-
     def test_load_update_products
       load_update_products
       render plain: 'ok'
@@ -59,7 +54,6 @@ RSpec.describe ProductImportDataLoaders, type: :controller do
       get 'test_load_shipping_categories' => "#{path}#test_load_shipping_categories"
       get 'test_load_stock_locations' => "#{path}#test_load_stock_locations"
       get 'test_load_option_types' => "#{path}#test_load_option_types"
-      get 'test_load_taxons' => "#{path}#test_load_taxons"
       get 'test_load_update_products' => "#{path}#test_load_update_products"
     end
   end
@@ -151,26 +145,6 @@ RSpec.describe ProductImportDataLoaders, type: :controller do
       get :test_load_option_types
       expect(assigns(:option_types).first).to eq(option_type1)
     end
-  end
-
-  describe '#load_taxons' do
-    let!(:parent_taxon) { create(:taxon, name: 'Categories') }
-    let!(:child_taxon) { create(:taxon, name: 'Clothing', parent: parent_taxon) }
-    let!(:grandchild_taxon) { create(:taxon, name: 'Shirts', parent: child_taxon) }
-
-    it 'loads taxons with computed pretty_name' do
-      get :test_load_taxons
-      sorted_taxons = assigns(:taxons)
-      
-      shirt_taxon = sorted_taxons.find { |t| t.id == grandchild_taxon.id }
-      expect(shirt_taxon.pretty_name).to include('Categories > Clothing > Shirts')
-    end
-
-    it 'sorts taxons by pretty_name' do
-      get :test_load_taxons
-      expect(assigns(:taxons)).to be_an(Array)
-    end
-
   end
 
   describe '#load_update_products' do

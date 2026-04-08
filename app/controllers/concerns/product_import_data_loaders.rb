@@ -4,12 +4,11 @@ module ProductImportDataLoaders
   extend ActiveSupport::Concern
 
   included do
-    before_action :load_products, only: :index
-    before_action :load_vendors, only: %i[index new create bulk_update]
-    before_action :load_shipping_categories, only: %i[new create bulk_update]
-    before_action :load_stock_locations, only: %i[new bulk_update]
-    before_action :load_option_types, only: %i[new create]
-    before_action :load_taxons, only: %i[new create]
+    # before_action :load_products, only: :index
+    # before_action :load_vendors, only: %i[index new create bulk_update]
+    # before_action :load_shipping_categories, only: %i[new create bulk_update]
+    # before_action :load_stock_locations, only: %i[new bulk_update]
+    # before_action :load_option_types, only: %i[new create]
   end
 
   private
@@ -63,33 +62,6 @@ module ProductImportDataLoaders
     @option_types = Spree::OptionType
       .includes(*option_type_includes)
       .order(:position, :name)
-  end
-
-  # Loads taxons (categories) with optimized pretty_name calculation
-  # Pre-computes full taxonomy paths (e.g., "Categories > Clothing > Shirts")
-  # to avoid N+1 queries when displaying taxon hierarchies in the UI
-  # 
-  # Uses nested-set positioning to build taxonomy tree efficiently
-  def load_taxons
-    taxon_includes = Spree::Taxon.reflect_on_association(:translations) ? :translations : []
-    all_taxons = Spree::Taxon.includes(taxon_includes).order(:lft).to_a
-    taxon_by_id = all_taxons.index_by(&:id)
-
-    # Pre-compute pretty_name from the already-loaded set to avoid N+1
-    # queries from self_and_ancestors (nested-set lft/rgt) and per-taxon
-    # translation loads.
-    all_taxons.each do |taxon|
-      parts = []
-      current = taxon
-      while current
-        parts.unshift(current.name)
-        current = taxon_by_id[current.parent_id]
-      end
-      computed = parts.join(' > ')
-      taxon.define_singleton_method(:pretty_name) { computed }
-    end
-
-    @taxons = all_taxons.sort_by(&:pretty_name)
   end
 
   # Loads products for bulk update mode

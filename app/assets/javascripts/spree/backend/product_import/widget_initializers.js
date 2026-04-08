@@ -26,7 +26,12 @@ Spree.ProductImport.WidgetInitializers = (function() {
     var row = document.querySelector(rowSelector);
     if (!row) return;
 
-    // Initialize Select2 for regular selects
+    // Initialize AJAX-powered Select2 for taxon selects
+    jQuery(row).find('[data-role="row-taxons-select"]').each(function() {
+      initTaxonsAjaxSelect2(this);
+    });
+
+    // Initialize Select2 for regular selects (excluding taxon selects already handled above)
     jQuery(row).find('select.select2').each(function() {
       jQuery(this).select2({ 
         width: '100%' 
@@ -39,6 +44,43 @@ Spree.ProductImport.WidgetInitializers = (function() {
         width: '100%', 
         allowClear: true 
       });
+    });
+  }
+
+  // Initializes a taxon <select> with Select2 AJAX search against /api/v1/taxons.
+  // Pre-selected options are read from the element's data-preselected attribute (JSON array
+  // of {id, text} objects) so re-rendered forms preserve their selected taxons.
+  function initTaxonsAjaxSelect2(selectEl) {
+    if (!window.jQuery || !jQuery.fn.select2) return;
+    if (jQuery(selectEl).data('select2')) return; // already initialised
+
+    var token = (window.Spree && window.Spree.api_key) || '';
+
+    jQuery(selectEl).select2({
+      width: '100%',
+      placeholder: 'Search taxons\u2026',
+      minimumInputLength: 1,
+      ajax: {
+        url: '/api/v1/taxons',
+        dataType: 'json',
+        delay: 300,
+        data: function(params) {
+          return {
+            per_page: 50,
+            without_children: true,
+            q: { name_cont: params.term },
+            token: token
+          };
+        },
+        processResults: function(data) {
+          return {
+            results: (data.taxons || []).map(function(t) {
+              return { id: t.id, text: t.pretty_name };
+            })
+          };
+        },
+        cache: true
+      }
     });
   }
 
@@ -87,6 +129,7 @@ Spree.ProductImport.WidgetInitializers = (function() {
   return {
     init: init,
     initRowWidgets: initRowWidgets,
-    initExistingRows: initExistingRows
+    initExistingRows: initExistingRows,
+    initTaxonsAjaxSelect2: initTaxonsAjaxSelect2
   };
 })();

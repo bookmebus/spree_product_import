@@ -91,6 +91,40 @@ Spree.ProductImport.EventHandlers = (function() {
         if (avInput._flatpickr) avInput._flatpickr.destroy();
         flatpickr(avInput, { dateFormat: 'Y-m-d', allowInput: true });
       }
+    } else if (field === 'taxons') {
+      var taxonBulkSel = document.getElementById('bulk-value-taxons');
+      if (taxonBulkSel && window.jQuery && jQuery.fn.select2) {
+        if (!jQuery(taxonBulkSel).data('select2')) {
+          var token = (window.Spree && window.Spree.api_key) || '';
+          jQuery(taxonBulkSel).select2({
+            width: '100%',
+            placeholder: 'Search taxons\u2026',
+            minimumInputLength: 1,
+            dropdownParent: jQuery('#bulk-apply-modal'),
+            ajax: {
+              url: '/api/v1/taxons',
+              dataType: 'json',
+              delay: 300,
+              data: function(params) {
+                return {
+                  per_page: 50,
+                  without_children: true,
+                  q: { name_cont: params.term },
+                  token: token
+                };
+              },
+              processResults: function(data) {
+                return {
+                  results: (data.taxons || []).map(function(t) {
+                    return { id: t.id, text: t.pretty_name };
+                  })
+                };
+              },
+              cache: true
+            }
+          });
+        }
+      }
     } else if (window.jQuery) {
       var fieldSection = document.getElementById('bulk-field-' + field);
       if (fieldSection) {
@@ -159,12 +193,19 @@ Spree.ProductImport.EventHandlers = (function() {
           if (window.jQuery) jQuery(vendorSelect).trigger('change');
         }
       } else if (currentBulkField === 'taxons') {
-        var taxonSelect = detailsRow.querySelector('[data-role="row-taxons-select"]');
         var taxonMulti = document.getElementById('bulk-value-taxons');
-        if (taxonSelect && taxonMulti) {
-          var selectedTaxonIds = Array.from(taxonMulti.selectedOptions).map(function(o) { return o.value; });
-          Array.from(taxonSelect.options).forEach(function(opt) {
-            opt.selected = selectedTaxonIds.indexOf(opt.value) !== -1;
+        if (!taxonMulti) return;
+        var selectedOptions = Array.from(taxonMulti.selectedOptions);
+        var taxonSelect = detailsRow.querySelector('[data-role="row-taxons-select"]');
+        if (taxonSelect && selectedOptions.length > 0) {
+          selectedOptions.forEach(function(opt) {
+            // Add the option to the row select if it isn't already there
+            if (!taxonSelect.querySelector('option[value="' + opt.value + '"]')) {
+              var newOpt = new Option(opt.text, opt.value, true, true);
+              taxonSelect.appendChild(newOpt);
+            } else {
+              taxonSelect.querySelector('option[value="' + opt.value + '"]').selected = true;
+            }
           });
           if (window.jQuery) jQuery(taxonSelect).trigger('change');
         }
